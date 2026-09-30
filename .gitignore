@@ -11,7 +11,7 @@ data/
 *.db-wal
 
 # Go build outputs
-pan-wallet
-pan-wallet.exe
+/pan-wallet
+/pan-wallet.exe
 *.test
 coverage.out
