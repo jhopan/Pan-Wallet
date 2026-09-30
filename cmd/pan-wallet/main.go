@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
 	"github.com/jhopan/Pan-Wallet/internal/config"
+	"github.com/jhopan/Pan-Wallet/internal/database"
 	"github.com/jhopan/Pan-Wallet/internal/httpapi"
 )
 
@@ -13,6 +15,12 @@ func main() {
 	if err := settings.Validate(); err != nil {
 		log.Fatal(err)
 	}
+
+	store, err := database.Open(context.Background(), settings.DatabaseURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer store.Close()
 
 	log.Printf("Pan-Wallet listening on %s", settings.Address)
 	if err := http.ListenAndServe(settings.Address, httpapi.New()); err != nil {
