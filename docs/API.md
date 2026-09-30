@@ -1,6 +1,6 @@
 # Pan-Wallet API
 
-Status: backend core sedang dibangun. Endpoint publik belum dibuka.
+Status: product hold endpoint tersedia. Admin, customer, top-up PayPan, dan website sedang dibangun.
 
 ## Product money flow
 
@@ -14,6 +14,31 @@ Produk tidak pernah mengubah tabel saldo langsung.
 ## Product authentication
 
 Setiap product memakai API key berbeda. Backend hanya menyimpan SHA-256 hash key. API key tidak pernah diberikan ke browser dan tidak memberi akses Supabase.
+
+## Endpoint product
+
+### `POST /v1/holds`
+
+Header wajib:
+
+```text
+Authorization: Bearer <product-api-key>
+Idempotency-Key: hold:<product>:<reference-id>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "wallet_user_id": "UUID",
+  "reference_id": "AP-1001",
+  "amount": 25000,
+  "expires_at": "2030-01-01T00:00:00Z"
+}
+```
+
+`product` tidak diterima dari body. Backend mengambilnya dari product API key. Body maksimal 1 MiB. Sukses memberi `201 Created` dan hold aktif.
 
 ## Money invariants
 
