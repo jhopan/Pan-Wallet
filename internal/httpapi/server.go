@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jhopan/Pan-Wallet/internal/auth"
+	"github.com/jhopan/Pan-Wallet/internal/report"
 	"github.com/jhopan/Pan-Wallet/internal/wallet"
 )
 
@@ -20,19 +21,22 @@ type HoldStore interface {
 	CreateHold(context.Context, wallet.CreateHoldRequest, time.Time) (wallet.Hold, error)
 }
 
+type OverviewStore interface {
+	Overview(context.Context) (report.Overview, error)
+}
+
 type Server struct {
 	mux           *http.ServeMux
 	authenticator ProductAuthenticator
 	holds         HoldStore
+	overview      OverviewStore
 }
 
-func New(authenticator ProductAuthenticator, holds ...HoldStore) *Server {
+func New(authenticator ProductAuthenticator, holds HoldStore, overview OverviewStore) *Server {
 	mux := http.NewServeMux()
-	server := &Server{mux: mux, authenticator: authenticator}
-	if len(holds) == 1 {
-		server.holds = holds[0]
-	}
+	server := &Server{mux: mux, authenticator: authenticator, holds: holds, overview: overview}
 	mux.HandleFunc("GET /healthz", health)
+	mux.HandleFunc("GET /", server.dashboard)
 	mux.HandleFunc("POST /v1/holds", server.requireProductAuth(server.hold))
 	return server
 }

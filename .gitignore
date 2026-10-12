@@ -15,3 +15,10 @@ data/
 /pan-wallet.exe
 *.test
 coverage.out
+
+# Local run artifacts
+pan-wallet.out.log
+pan-wallet.err.log
+dashboard-preview.html
+.local-db-url
+.local-demo-token

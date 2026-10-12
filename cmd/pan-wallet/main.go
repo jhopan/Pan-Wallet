@@ -26,7 +26,7 @@ func main() {
 	productAuthenticator := auth.NewProductAuthenticator(store)
 
 	log.Printf("Pan-Wallet listening on %s", settings.Address)
-	if err := http.ListenAndServe(settings.Address, httpapi.New(productAuthenticator, store)); err != nil {
+	if err := http.ListenAndServe(settings.Address, httpapi.New(productAuthenticator, store, store)); err != nil {
 		log.Fatal(err)
 	}
 }

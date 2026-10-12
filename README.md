@@ -22,6 +22,34 @@ Database dipilih sebelum service berjalan. Dashboard tidak menyimpan URL databas
 - `PAN_WALLET_ADDR`: bind HTTP, default `:8080`.
 - Salin `.env.example` menjadi `.env`, isi URL lokal, lalu muat environment lewat service manager.
 
+## Jalan lokal
+
+Prasyarat: PostgreSQL lokal dan Go 1.26.
+
+```bash
+# 1. siapkan database
+createdb pan_wallet            # atau pakai Supabase
+cp .env.example .env           # isi PAN_WALLET_DATABASE_URL
+
+# 2. build
+go build -o pan-wallet.exe ./cmd/pan-wallet
+
+# 3. jalankan (Windows PowerShell)
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
+```
+
+Buka `http://127.0.0.1:8080` untuk dashboard saldo, `GET /healthz` untuk cek service.
+
+Buat product API key (hash SHA-256 saja yang disimpan):
+
+```bash
+# ganti TOKEN dengan key pilihanmu
+TOKEN=pw_live_contoh
+HASH=$(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)
+psql "$PAN_WALLET_DATABASE_URL" -c \
+  "insert into product_api_keys (product, token_hash) values ('agenpulsa', decode('$HASH','hex'));"
+```
+
 ## Local checks
 
 ```bash
