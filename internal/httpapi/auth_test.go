@@ -37,7 +37,7 @@ func TestProductEndpointRejectsUnauthenticatedRequest(t *testing.T) {
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/v1/holds", nil)
 
-	New(fakeAuthenticator{}, nil, nil).ServeHTTP(response, request)
+	New(Deps{Auth: fakeAuthenticator{}}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusUnauthorized)

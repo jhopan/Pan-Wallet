@@ -7,8 +7,10 @@ import (
 )
 
 type Settings struct {
-	Address     string
-	DatabaseURL string
+	Address       string
+	DatabaseURL   string
+	AdminUsername string
+	AdminPassword string
 }
 
 func (settings Settings) Validate() error {
@@ -23,6 +25,12 @@ func (settings Settings) Validate() error {
 	if databaseURL.Scheme != "postgres" && databaseURL.Scheme != "postgresql" {
 		return fmt.Errorf("PAN_WALLET_DATABASE_URL harus URL PostgreSQL")
 	}
+	if settings.AdminUsername == "" {
+		return fmt.Errorf("PAN_WALLET_ADMIN_USER wajib diisi")
+	}
+	if len(settings.AdminPassword) < 8 {
+		return fmt.Errorf("PAN_WALLET_ADMIN_PASS minimal 8 karakter")
+	}
 	return nil
 }
 
@@ -33,7 +41,9 @@ func Load() Settings {
 	}
 
 	return Settings{
-		Address:     address,
-		DatabaseURL: os.Getenv("PAN_WALLET_DATABASE_URL"),
+		Address:       address,
+		DatabaseURL:   os.Getenv("PAN_WALLET_DATABASE_URL"),
+		AdminUsername: os.Getenv("PAN_WALLET_ADMIN_USER"),
+		AdminPassword: os.Getenv("PAN_WALLET_ADMIN_PASS"),
 	}
 }

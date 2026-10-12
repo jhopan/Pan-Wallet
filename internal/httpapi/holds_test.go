@@ -33,7 +33,7 @@ func TestHoldUsesAuthenticatedProductScope(t *testing.T) {
 	request.Header.Set("Idempotency-Key", "hold:agenpulsa:AP-1001")
 	response := httptest.NewRecorder()
 
-	New(fakeAuthenticator{}, store, nil).ServeHTTP(response, request)
+	New(Deps{Auth: fakeAuthenticator{}, Holds: store}).ServeHTTP(response, request)
 
 	if response.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d", response.Code, http.StatusCreated)

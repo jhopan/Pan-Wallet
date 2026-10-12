@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/jhopan/Pan-Wallet/internal/auth"
 	"github.com/jhopan/Pan-Wallet/internal/config"
@@ -23,10 +24,24 @@ func main() {
 	}
 	defer store.Close()
 
-	productAuthenticator := auth.NewProductAuthenticator(store)
+	adminAuth := httpapi.NewAdminAuth(settings.AdminUsername, settings.AdminPassword)
+	go func() {
+		for range time.Tick(30 * time.Minute) {
+			adminAuth.Sweep()
+		}
+	}()
+
+	server := httpapi.New(httpapi.Deps{
+		Auth:     auth.NewProductAuthenticator(store),
+		Holds:    store,
+		Overview: store,
+		Topups:   store,
+		Settings: store,
+		Admin:    adminAuth,
+	})
 
 	log.Printf("Pan-Wallet listening on %s", settings.Address)
-	if err := http.ListenAndServe(settings.Address, httpapi.New(productAuthenticator, store, store)); err != nil {
+	if err := http.ListenAndServe(settings.Address, server); err != nil {
 		log.Fatal(err)
 	}
 }

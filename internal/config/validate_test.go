@@ -11,8 +11,10 @@ func TestSettingsValidateRejectsMissingDatabaseURL(t *testing.T) {
 
 func TestSettingsValidateAcceptsPostgresURL(t *testing.T) {
 	settings := Settings{
-		Address:     ":8080",
-		DatabaseURL: "postgres://wallet:secret@example.test:5432/wallet?sslmode=require",
+		Address:       ":8080",
+		DatabaseURL:   "postgres://wallet:secret@example.test:5432/wallet?sslmode=require",
+		AdminUsername: "admin",
+		AdminPassword: "rahasia123",
 	}
 
 	if err := settings.Validate(); err != nil {

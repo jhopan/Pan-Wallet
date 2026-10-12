@@ -16,10 +16,14 @@ var apiSecuritySQL string
 //go:embed migrations/000003_hold_transitions.sql
 var holdTransitionsSQL string
 
+//go:embed migrations/000004_qris_topup.sql
+var qrisTopupSQL string
+
 func Migrations() []Migration {
 	return []Migration{
 		{Name: "000001_wallet_core.sql", SQL: walletCoreSQL},
 		{Name: "000002_api_security.sql", SQL: apiSecuritySQL},
 		{Name: "000003_hold_transitions.sql", SQL: holdTransitionsSQL},
+		{Name: "000004_qris_topup.sql", SQL: qrisTopupSQL},
 	}
 }
