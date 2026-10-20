@@ -83,7 +83,7 @@ func (server *Server) routes() {
 	mux.HandleFunc("GET /admin/logout", server.logout)
 
 	// Panel kendali (butuh sesi admin)
-	mux.HandleFunc("GET /", server.dashboard)
+	mux.HandleFunc("GET /", server.root)
 	mux.HandleFunc("GET /admin", server.requireAdmin(server.adminHome))
 	mux.HandleFunc("GET /admin/topup", server.requireAdmin(server.adminTopup))
 	mux.HandleFunc("POST /admin/topup", server.requireAdmin(server.adminTopupCreate))

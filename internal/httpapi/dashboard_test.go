@@ -27,19 +27,21 @@ func (fakeOverviewStore) Overview(context.Context) (report.Overview, error) {
 	}, nil
 }
 
-// Halaman publik "/" hanya menyapa: tidak boleh membocorkan saldo tanpa login.
-func TestPublicRootDoesNotLeakBalance(t *testing.T) {
+// Akar situs harus 404: orang iseng tidak boleh tahu Pan-Wallet ada di sini.
+func TestPublicRootReturns404(t *testing.T) {
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	New(Deps{Overview: fakeOverviewStore{}}).ServeHTTP(response, request)
 
-	if response.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", response.Code)
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", response.Code)
 	}
 	body := response.Body.String()
-	if strings.Contains(body, "100.000") || strings.Contains(body, "e469f462") {
-		t.Fatal("halaman publik membocorkan data saldo")
+	for _, leak := range []string{"Pan-Wallet", "100.000", "e469f462", "/admin"} {
+		if strings.Contains(body, leak) {
+			t.Fatalf("halaman 404 membocorkan %q", leak)
+		}
 	}
 }
 
