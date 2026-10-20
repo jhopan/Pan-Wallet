@@ -10,6 +10,7 @@ import (
 	"github.com/jhopan/Pan-Wallet/internal/config"
 	"github.com/jhopan/Pan-Wallet/internal/database"
 	"github.com/jhopan/Pan-Wallet/internal/httpapi"
+	"github.com/jhopan/Pan-Wallet/internal/sqlite"
 )
 
 func main() {
@@ -18,30 +19,47 @@ func main() {
 		log.Fatal(err)
 	}
 
-	store, err := database.Open(context.Background(), settings.DatabaseURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer store.Close()
-
 	adminAuth := httpapi.NewAdminAuth(settings.AdminUsername, settings.AdminPassword)
+	deps := httpapi.Deps{Admin: adminAuth}
+	var closeStore func()
+
+	switch settings.Driver {
+	case config.DriverSQLite:
+		store, err := sqlite.Open(context.Background(), settings.DatabasePath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("database: sqlite %s", settings.DatabasePath)
+		deps.Auth = auth.NewProductAuthenticator(store)
+		deps.Holds = store
+		deps.Overview = store
+		deps.Topups = store
+		deps.Settings = store
+		closeStore = store.Close
+
+	default:
+		store, err := database.Open(context.Background(), settings.DatabaseURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("database: postgres")
+		deps.Auth = auth.NewProductAuthenticator(store)
+		deps.Holds = store
+		deps.Overview = store
+		deps.Topups = store
+		deps.Settings = store
+		closeStore = store.Close
+	}
+	defer closeStore()
+
 	go func() {
 		for range time.Tick(30 * time.Minute) {
 			adminAuth.Sweep()
 		}
 	}()
 
-	server := httpapi.New(httpapi.Deps{
-		Auth:     auth.NewProductAuthenticator(store),
-		Holds:    store,
-		Overview: store,
-		Topups:   store,
-		Settings: store,
-		Admin:    adminAuth,
-	})
-
 	log.Printf("Pan-Wallet listening on %s", settings.Address)
-	if err := http.ListenAndServe(settings.Address, server); err != nil {
+	if err := http.ListenAndServe(settings.Address, httpapi.New(deps)); err != nil {
 		log.Fatal(err)
 	}
 }
