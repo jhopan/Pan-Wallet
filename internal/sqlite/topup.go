@@ -211,3 +211,30 @@ func (store *Store) ExpireTopupInvoice(ctx context.Context, localID string) erro
 		`update topup_invoices set status = 'expired' where id = ? and status = 'pending'`, localID)
 	return err
 }
+
+// PendingTopupInvoices mengambil invoice pending yang lebih tua dari batas,
+// untuk dicek ulang ke PayPan oleh rekonsiliasi.
+func (store *Store) PendingTopupInvoices(ctx context.Context, olderThan time.Time) ([]topup.Invoice, error) {
+	rows, err := store.db.QueryContext(ctx, `
+		select id, wallet_user_id, coalesce(paypan_invoice_id,''), price, code, total, status, source, expires_at
+		from topup_invoices
+		where status = 'pending' and created_at < ?
+		order by created_at limit 50`, olderThan.Unix())
+	if err != nil {
+		return nil, fmt.Errorf("daftar invoice pending: %w", err)
+	}
+	defer rows.Close()
+
+	var invoices []topup.Invoice
+	for rows.Next() {
+		var invoice topup.Invoice
+		var expiresAt int64
+		if err := rows.Scan(&invoice.ID, &invoice.WalletUserID, &invoice.PaypanInvoice, &invoice.Price,
+			&invoice.Code, &invoice.Total, &invoice.Status, &invoice.Source, &expiresAt); err != nil {
+			return nil, fmt.Errorf("baca invoice: %w", err)
+		}
+		invoice.ExpiresAt = time.Unix(expiresAt, 0)
+		invoices = append(invoices, invoice)
+	}
+	return invoices, rows.Err()
+}

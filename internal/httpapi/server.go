@@ -10,6 +10,7 @@ import (
 
 	"github.com/jhopan/Pan-Wallet/internal/auth"
 	"github.com/jhopan/Pan-Wallet/internal/paypan"
+	"github.com/jhopan/Pan-Wallet/internal/ratelimit"
 	"github.com/jhopan/Pan-Wallet/internal/report"
 	"github.com/jhopan/Pan-Wallet/internal/sqlite"
 	"github.com/jhopan/Pan-Wallet/internal/topup"
@@ -83,18 +84,60 @@ type Deps struct {
 	Wallets    WalletStore
 	PublicIDs  PublicIDStore
 	Identities IdentityStore
+	Reconcile  ReconcileStore
 }
 
 type Server struct {
 	mux      *http.ServeMux
 	deps     Deps
 	renderer *Renderer
+	limiter  *ratelimit.Limiter
 }
 
+// publicLimit: 30 permintaan per menit per IP untuk endpoint publik.
+// Cukup longgar untuk bot normal, cukup ketat untuk mencegah brute force ID.
+const publicLimitPerMinute = 30
+
 func New(deps Deps) *Server {
-	server := &Server{mux: http.NewServeMux(), deps: deps, renderer: NewRenderer()}
+	server := &Server{
+		mux:      http.NewServeMux(),
+		deps:     deps,
+		renderer: NewRenderer(),
+		limiter:  ratelimit.New(publicLimitPerMinute, time.Minute),
+	}
 	server.routes()
 	return server
+}
+
+// limitPublic membatasi endpoint publik per IP. Balas 429 saat habis.
+func (server *Server) limitPublic(next http.HandlerFunc) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		key := clientIP(request)
+		if !server.limiter.Allow(key) {
+			response.Header().Set("Retry-After", "60")
+			writeError(response, http.StatusTooManyRequests, "terlalu banyak permintaan, coba lagi sebentar")
+			return
+		}
+		next.ServeHTTP(response, request)
+	}
+}
+
+// clientIP mengambil IP pemanggil, sadar proxy (Cloudflare / reverse proxy).
+func clientIP(request *http.Request) string {
+	if forwarded := request.Header.Get("CF-Connecting-IP"); forwarded != "" {
+		return forwarded
+	}
+	if forwarded := request.Header.Get("X-Forwarded-For"); forwarded != "" {
+		if comma := strings.Index(forwarded, ","); comma > 0 {
+			return strings.TrimSpace(forwarded[:comma])
+		}
+		return strings.TrimSpace(forwarded)
+	}
+	host := request.RemoteAddr
+	if colon := strings.LastIndex(host, ":"); colon > 0 {
+		return host[:colon]
+	}
+	return host
 }
 
 func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Request) {
@@ -108,13 +151,16 @@ func (server *Server) routes() {
 	mux.HandleFunc("GET /healthz", health)
 	mux.HandleFunc("GET /pay/{id}", server.checkout)
 	mux.HandleFunc("GET /api/topup/{id}", server.topupStatus)
-	mux.HandleFunc("POST /v1/identity/resolve", server.identityResolve)
-	mux.HandleFunc("POST /v1/identity/link/start", server.identityLinkStart)
-	mux.HandleFunc("POST /v1/identity/link/confirm", server.identityLinkConfirm)
-	mux.HandleFunc("GET /v1/public/{id}/identities", server.identityList)
-	mux.HandleFunc("GET /v1/public/{id}", server.publicWallet)
-	mux.HandleFunc("POST /v1/public/{id}/topup", server.publicTopup)
+	mux.HandleFunc("POST /v1/identity/resolve", server.limitPublic(server.identityResolve))
+	mux.HandleFunc("POST /v1/identity/link/start", server.limitPublic(server.identityLinkStart))
+	mux.HandleFunc("POST /v1/identity/link/confirm", server.limitPublic(server.identityLinkConfirm))
+	mux.HandleFunc("GET /v1/public/{id}/identities", server.limitPublic(server.identityList))
+	mux.HandleFunc("GET /v1/public/{id}", server.limitPublic(server.publicWallet))
+	mux.HandleFunc("POST /v1/public/{id}/topup", server.limitPublic(server.publicTopup))
 	mux.HandleFunc("POST /webhook/paypan", server.paypanWebhook)
+	mux.HandleFunc("GET /masuk", server.limitPublic(server.portalLogin))
+	mux.HandleFunc("POST /masuk", server.limitPublic(server.portalStart))
+	mux.HandleFunc("POST /masuk/cek", server.limitPublic(server.portalCheck))
 	mux.HandleFunc("GET /admin/login", server.loginPage)
 	mux.HandleFunc("POST /admin/login", server.loginSubmit)
 	mux.HandleFunc("GET /admin/logout", server.logout)

@@ -21,6 +21,7 @@ func NewRenderer() *Renderer {
 		"ledger":   template.Must(template.New("ledger").Parse(layoutHTML + ledgerHTML)),
 		"keys":     template.Must(template.New("keys").Parse(layoutHTML + keysHTML)),
 		"checkout": template.Must(template.New("checkout").Parse(checkoutHTML)),
+		"portal":   template.Must(template.New("portal").Parse(portalHTML)),
 	}}
 }
 
@@ -375,4 +376,106 @@ const walletsHTML = `
 {{else}}<tr><td colspan="7" class="empty">Belum ada wallet</td></tr>{{end}}
 </table></div>
 </div></div></div></body></html>
+`
+
+const portalHTML = `<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} - Pan-Wallet</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f2f4f8;color:#101828;padding:24px;display:flex;justify-content:center}
+.wrap{width:100%;max-width:440px}
+.card{background:#fff;border-radius:16px;padding:26px;box-shadow:0 2px 16px rgba(0,0,0,.08);margin-bottom:16px}
+h1{font-size:19px;margin:0 0 4px}
+p.sub{color:#667085;font-size:13px;margin:0 0 18px}
+label{display:block;font-size:13px;color:#344054;font-weight:600;margin:0 0 5px}
+input{width:100%;box-sizing:border-box;padding:11px;border:1px solid #d0d5dd;border-radius:8px;font-size:15px;margin-bottom:14px}
+input:focus{outline:2px solid #1a7f37;border-color:#1a7f37}
+button{width:100%;padding:12px;background:#1a7f37;color:#fff;border:0;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px}
+button:hover{background:#166f30}
+button.sec{background:#fff;color:#344054;border:1px solid #d0d5dd}
+.err{background:#fee4e2;color:#b42318;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
+.code{background:#f2f4f8;border:1px dashed #98a2b3;border-radius:10px;padding:16px;text-align:center;font-size:30px;font-weight:800;letter-spacing:0.18em;margin:14px 0}
+.amount{font-size:34px;font-weight:800;margin:6px 0;font-variant-numeric:tabular-nums}
+.rowline{display:flex;justify-content:space-between;font-size:13px;color:#667085;padding:6px 0;border-bottom:1px solid #f0f0f0}
+.rowline b{color:#101828}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 6px;border-bottom:1px solid #eee;text-align:left}
+th{color:#667085;font-size:11px;text-transform:uppercase}
+td.money{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;background:#d4edda;color:#0f5132}
+footer{color:#98a2b3;font-size:11px;text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+{{if eq .Step "email"}}
+<div class="card">
+  <h1>Saldo Saya</h1>
+  <p class="sub">Masukkan email yang sudah terhubung ke bot Telegram.</p>
+  {{if .Error}}<div class="err">{{.Error}}</div>{{end}}
+  <form method="post" action="/masuk">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" placeholder="nama@email.com" required autofocus>
+    <button type="submit">Lanjut</button>
+  </form>
+  <footer>by JhopanStore</footer>
+</div>
+{{end}}
+
+{{if eq .Step "code"}}
+<div class="card">
+  <h1>Ikat akun</h1>
+  <p class="sub">Email <b>{{.Email}}</b> belum terhubung. Kirim kode ini ke bot Telegram Pan-Wallet.</p>
+  <div class="code">{{.Code}}</div>
+  <p class="sub">Buka Telegram, kirim:<br><b>/ikat {{.Code}}</b></p>
+  <form method="post" action="/masuk/cek">
+    <input type="hidden" name="email" value="{{.Email}}">
+    <button type="submit">Saya sudah kirim</button>
+  </form>
+  <footer>Kode berlaku 10 menit</footer>
+</div>
+{{end}}
+
+{{if eq .Step "wallet"}}
+<div class="card">
+  <h1>Saldo Saya</h1>
+  <p class="sub">ID Pelanggan: <b style="letter-spacing:0.08em">{{.PublicID}}</b></p>
+  <div class="amount">Rp {{.Available}}</div>
+  <div class="rowline"><span>Tersedia</span><b>Rp {{.Available}}</b></div>
+  <div class="rowline"><span>Tertahan</span><b>Rp {{.Held}}</b></div>
+  <div class="rowline"><span>Total saldo</span><b>Rp {{.Balance}}</b></div>
+  <div class="rowline"><span>Status</span><b><span class="badge">{{.Status}}</span></b></div>
+  <footer>Untuk top-up, buka bot Telegram Pan-Wallet</footer>
+</div>
+
+<div class="card">
+  <h2 style="font-size:15px;margin:0 0 10px">Riwayat terakhir</h2>
+  <table>
+    <tr><th>Waktu</th><th>Jenis</th><th class="money">Nominal</th></tr>
+    {{range .Entries}}
+    <tr>
+      <td>{{.CreatedAt}}</td>
+      <td>{{.EntryType}}</td>
+      <td class="money">{{if .IsCredit}}<span style="color:#0f5132">+{{.Amount}}</span>{{else}}<span style="color:#b42318">-{{.Amount}}</span>{{end}}</td>
+    </tr>
+    {{else}}
+    <tr><td colspan="3" style="text-align:center;color:#98a2b3;padding:16px">Belum ada transaksi</td></tr>
+    {{end}}
+  </table>
+</div>
+
+<div class="card">
+  <h2 style="font-size:15px;margin:0 0 8px">Akun terhubung</h2>
+  {{range .Links}}<div class="rowline"><span>{{.}}</span></div>{{else}}<div class="rowline"><span>-</span></div>{{end}}
+  <footer><a href="/masuk" style="color:#1a7f37">Keluar</a></footer>
+</div>
+{{end}}
+
+</div>
+</body>
+</html>
 `

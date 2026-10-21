@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -138,4 +139,26 @@ func (server *Server) paypanReconcile(response http.ResponseWriter, request *htt
 func readLimitedBody(response http.ResponseWriter, request *http.Request, limit int64) ([]byte, error) {
 	reader := http.MaxBytesReader(response, request.Body, limit)
 	return io.ReadAll(reader)
+}
+
+// paypanClientFrom membangun client dari pengaturan tanpa *http.Request.
+// Dipakai rekonsiliasi latar belakang.
+func (server *Server) paypanClientFrom(ctx context.Context) (*paypan.Client, error) {
+	if server.deps.Settings == nil {
+		return nil, errors.New("pengaturan belum siap")
+	}
+	baseURL, err := server.deps.Settings.Setting(ctx, "paypan_base_url")
+	if err != nil {
+		return nil, err
+	}
+	token, err := server.deps.Settings.Setting(ctx, "paypan_token")
+	if err != nil {
+		return nil, err
+	}
+	baseURL = strings.TrimSpace(baseURL)
+	token = strings.TrimSpace(token)
+	if baseURL == "" || token == "" {
+		return nil, errors.New("PayPan belum dikonfigurasi")
+	}
+	return paypan.NewClient(baseURL, token), nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jhopan/Pan-Wallet/internal/topup"
@@ -44,6 +45,30 @@ func (store *Store) RecentTopupInvoices(ctx context.Context, limit int) ([]topup
 		from topup_invoices order by created_at desc limit $1`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("daftar invoice: %w", err)
+	}
+	defer rows.Close()
+
+	var invoices []topup.Invoice
+	for rows.Next() {
+		var invoice topup.Invoice
+		if err := rows.Scan(&invoice.ID, &invoice.WalletUserID, &invoice.PaypanInvoice, &invoice.Price,
+			&invoice.Code, &invoice.Total, &invoice.Status, &invoice.Source, &invoice.ExpiresAt); err != nil {
+			return nil, fmt.Errorf("baca invoice: %w", err)
+		}
+		invoices = append(invoices, invoice)
+	}
+	return invoices, rows.Err()
+}
+
+// PendingTopupInvoices mengambil invoice pending untuk rekonsiliasi.
+func (store *Store) PendingTopupInvoices(ctx context.Context, olderThan time.Time) ([]topup.Invoice, error) {
+	rows, err := store.pool.Query(ctx, `
+		select id::text, wallet_user_id::text, coalesce(paypan_invoice_id,''), price, code, total, status, source, expires_at
+		from topup_invoices
+		where status = 'pending' and created_at < $1
+		order by created_at limit 50`, olderThan)
+	if err != nil {
+		return nil, fmt.Errorf("daftar invoice pending: %w", err)
 	}
 	defer rows.Close()
 

@@ -356,6 +356,66 @@ Setelah ini, `resolve` dengan email tersebut mengembalikan wallet yang sama.
 8. Website tampilkan saldo
 ```
 
+
+---
+
+## 6d. Portal pelanggan (web)
+
+Pelanggan bisa lihat saldo di browser tanpa install apa pun.
+
+| URL | Fungsi |
+|---|---|
+| `/masuk` | Form masukkan email |
+| `POST /masuk` | Kirim email -> terbitkan kode ikat |
+| `POST /masuk/cek` | Cek apakah sudah tertaut, tampilkan saldo |
+
+Alur:
+
+```
+1. Buka /masuk, masukkan email
+2. Kalau sudah tertaut -> saldo langsung tampil
+3. Kalau belum -> tampil kode 6 angka + instruksi /ikat ke bot Telegram
+4. Kirim kode ke Telegram, klik "Saya sudah kirim"
+5. Saldo + riwayat tampil
+```
+
+Halaman ini tidak butuh password. Verifikasi terjadi lewat Telegram.
+
+---
+
+## 6e. Rate limit endpoint publik
+
+Semua endpoint publik dibatasi **30 permintaan per menit per IP**:
+
+| Endpoint | Batas |
+|---|---|
+| `GET /v1/public/{id}` | 30/menit |
+| `POST /v1/public/{id}/topup` | 30/menit |
+| `POST /v1/identity/resolve` | 30/menit |
+| `POST /v1/identity/link/start` | 30/menit |
+| `POST /v1/identity/link/confirm` | 30/menit |
+| `GET /masuk`, `POST /masuk` | 30/menit |
+
+Melebihi batas -> `429` dengan header `Retry-After: 60`.
+
+IP diambil dari `CF-Connecting-IP`, lalu `X-Forwarded-For`, lalu `RemoteAddr` —
+sadar Cloudflare dan reverse proxy.
+
+---
+
+## 6f. Rekonsiliasi otomatis
+
+Webhook bisa gagal (jaringan, firewall, restart). Karena itu ada pemeriksaan
+berkala sebagai cadangan:
+
+- Setiap **2 menit**, Pan-Wallet menanyakan status invoice pending yang berumur
+  lebih dari **3 menit** ke PayPan.
+- `paid` -> saldo dikredit (idempoten, tidak dobel).
+- `expired` / `refunded` -> invoice ditandai kedaluwarsa.
+- `pending` -> dibiarkan untuk putaran berikutnya.
+
+Artinya: pelanggan tetap dapat saldo walau webhook tidak sampai.
+
 ---
 
 ## 7. Top-up QRIS lewat PayPan
@@ -472,7 +532,7 @@ curl -s -X POST http://127.0.0.1:8080/v1/holds/<HOLD_ID>/release \
 | Panel admin (dashboard, topup, config) | selesai |
 | Kelola API key dari panel | selesai |
 | Riwayat mutasi di panel | selesai |
-| Rekonsiliasi otomatis | belum (tombol sync manual ada) |
+| Rekonsiliasi otomatis | selesai |
 | ID pelanggan pendek (public_id) | selesai |
 | Cek saldo & top-up lewat ID publik | selesai |
 | Identitas Telegram (primer, auto-daftar) | selesai |

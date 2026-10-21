@@ -40,6 +40,7 @@ func main() {
 		deps.Wallets = store
 		deps.PublicIDs = store
 		deps.Identities = store
+		deps.Reconcile = store
 		closeStore = store.Close
 
 	default:
@@ -58,6 +59,7 @@ func main() {
 		deps.Wallets = store
 		deps.PublicIDs = store
 		deps.Identities = store
+		deps.Reconcile = store
 		closeStore = store.Close
 	}
 	defer closeStore()
@@ -68,8 +70,11 @@ func main() {
 		}
 	}()
 
+	server := httpapi.New(deps)
+	server.StartReconciler(context.Background())
+
 	log.Printf("Pan-Wallet listening on %s", settings.Address)
-	if err := http.ListenAndServe(settings.Address, httpapi.New(deps)); err != nil {
+	if err := http.ListenAndServe(settings.Address, server); err != nil {
 		log.Fatal(err)
 	}
 }
