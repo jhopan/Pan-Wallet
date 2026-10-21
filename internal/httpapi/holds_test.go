@@ -55,3 +55,36 @@ func TestHoldUsesAuthenticatedProductScope(t *testing.T) {
 		t.Fatalf("product = %q, want agenpulsa", store.request.Product)
 	}
 }
+
+// Wallet diblokir harus ditolak dengan 403, bukan 422 generik.
+func TestHoldRejectsBlockedWallet(t *testing.T) {
+	store := &blockedHoldStore{}
+	request := httptest.NewRequest(http.MethodPost, "/v1/holds", strings.NewReader(`{
+		"wallet_user_id":"22222222-2222-2222-2222-222222222222",
+		"reference_id":"AP-1","amount":1000,"expires_at":"2030-01-01T00:00:00Z"
+	}`))
+	request.Header.Set("Authorization", "Bearer pw_live_test")
+	request.Header.Set("Idempotency-Key", "hold:AP-1")
+	response := httptest.NewRecorder()
+
+	New(Deps{Auth: fakeAuthenticator{}, Holds: store}).ServeHTTP(response, request)
+
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", response.Code)
+	}
+}
+
+type blockedHoldStore struct{}
+
+func (blockedHoldStore) CreateHold(context.Context, wallet.CreateHoldRequest, time.Time) (wallet.Hold, error) {
+	return wallet.Hold{}, wallet.ErrWalletBlocked
+}
+func (blockedHoldStore) CaptureHold(context.Context, wallet.TransitionRequest) (wallet.Hold, error) {
+	return wallet.Hold{}, nil
+}
+func (blockedHoldStore) ReleaseHold(context.Context, wallet.TransitionRequest) (wallet.Hold, error) {
+	return wallet.Hold{}, nil
+}
+func (blockedHoldStore) WalletBalance(context.Context, string) (report.OverviewWallet, error) {
+	return report.OverviewWallet{}, nil
+}

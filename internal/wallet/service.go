@@ -12,6 +12,7 @@ var (
 	ErrHoldProcessed       = errors.New("hold sudah diproses")
 	ErrHoldExpired         = errors.New("hold sudah kadaluarsa")
 	ErrIdempotencyConflict = errors.New("idempotency key konflik")
+	ErrWalletBlocked       = errors.New("wallet diblokir")
 )
 
 type CreateHoldRequest struct {

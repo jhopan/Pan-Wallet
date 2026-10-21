@@ -237,6 +237,7 @@ Signature salah -> `403`. Webhook dobel -> saldo tetap (idempoten).
 | `/admin/login` | Login panel |
 | `/admin` | Dashboard: saldo, hold, ledger, invoice |
 | `/admin/topup` | Buat invoice top-up, sync status, tandai lunas |
+| `/admin/wallets` | Daftar wallet, buat wallet baru, blokir/aktifkan |
 | `/admin/ledger` | Riwayat mutasi saldo per wallet |
 | `/admin/keys` | Buat / rotasi / nonaktifkan API key produk |
 | `/admin/config` | Konfigurasi PayPan |

@@ -88,13 +88,19 @@ func (store *Store) CreateHold(ctx context.Context, request wallet.CreateHoldReq
 
 	var walletID string
 	var balance int64
-	err = tx.QueryRowContext(ctx,
-		`select id, balance from wallets where wallet_user_id = ?`, request.WalletUserID).Scan(&walletID, &balance)
+	var status string
+	err = tx.QueryRowContext(ctx, `
+		select w.id, w.balance, u.status from wallets w
+		join wallet_users u on u.id = w.wallet_user_id
+		where w.wallet_user_id = ?`, request.WalletUserID).Scan(&walletID, &balance, &status)
 	if errors.Is(err, sql.ErrNoRows) {
 		return wallet.Hold{}, wallet.ErrHoldNotFound
 	}
 	if err != nil {
 		return wallet.Hold{}, fmt.Errorf("baca wallet: %w", err)
+	}
+	if status != "active" {
+		return wallet.Hold{}, wallet.ErrWalletBlocked
 	}
 
 	var held int64

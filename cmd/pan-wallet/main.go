@@ -37,6 +37,7 @@ func main() {
 		deps.Settings = store
 		deps.Ledger = store
 		deps.Keys = store
+		deps.Wallets = store
 		closeStore = store.Close
 
 	default:
@@ -52,6 +53,7 @@ func main() {
 		deps.Settings = store
 		deps.Ledger = store
 		deps.Keys = store
+		deps.Wallets = store
 		closeStore = store.Close
 	}
 	defer closeStore()

@@ -62,6 +62,13 @@ type KeyStore interface {
 	RevokeProductKey(context.Context, string) error
 }
 
+// WalletStore mengelola daftar wallet user.
+type WalletStore interface {
+	ListWallets(context.Context, int) ([]sqlite.WalletRow, error)
+	CreateWalletUser(context.Context, int64) (string, error)
+	SetWalletStatus(context.Context, string, string) error
+}
+
 // Deps mengumpulkan dependency server. Field nil berarti fitur terkait belum
 // aktif dan endpoint-nya menjawab 503 dengan pesan jelas.
 type Deps struct {
@@ -73,6 +80,7 @@ type Deps struct {
 	Admin    *AdminAuth
 	Ledger   LedgerStore
 	Keys     KeyStore
+	Wallets  WalletStore
 }
 
 type Server struct {
@@ -110,6 +118,9 @@ func (server *Server) routes() {
 	mux.HandleFunc("POST /admin/topup", server.requireAdmin(server.adminTopupCreate))
 	mux.HandleFunc("POST /admin/topup/{id}/paid", server.requireAdmin(server.adminTopupPaid))
 	mux.HandleFunc("POST /admin/topup/{id}/sync", server.requireAdmin(server.paypanReconcile))
+	mux.HandleFunc("GET /admin/wallets", server.requireAdmin(server.adminWallets))
+	mux.HandleFunc("POST /admin/wallets", server.requireAdmin(server.adminWalletsCreate))
+	mux.HandleFunc("POST /admin/wallets/{id}/status", server.requireAdmin(server.adminWalletsStatus))
 	mux.HandleFunc("GET /admin/ledger", server.requireAdmin(server.adminLedger))
 	mux.HandleFunc("GET /admin/keys", server.requireAdmin(server.adminKeys))
 	mux.HandleFunc("POST /admin/keys", server.requireAdmin(server.adminKeysCreate))
@@ -179,6 +190,10 @@ func (server *Server) hold(response http.ResponseWriter, request *http.Request) 
 		Amount: body.Amount, IdempotencyKey: request.Header.Get("Idempotency-Key"),
 	}, body.ExpiresAt)
 	if err != nil {
+		if errors.Is(err, wallet.ErrWalletBlocked) {
+			writeError(response, http.StatusForbidden, "wallet diblokir")
+			return
+		}
 		writeError(response, http.StatusUnprocessableEntity, err.Error())
 		return
 	}

@@ -43,15 +43,20 @@ func (store *Store) CreateHold(ctx context.Context, request wallet.CreateHoldReq
 
 	var walletID string
 	var balance, held int64
+	var userStatus string
 	err = transaction.QueryRow(ctx, `
-		select id::text, balance from wallets
-		where wallet_user_id = $1::uuid for update`, request.WalletUserID,
-	).Scan(&walletID, &balance)
+		select w.id::text, w.balance, u.status from wallets w
+		join wallet_users u on u.id = w.wallet_user_id
+		where w.wallet_user_id = $1::uuid for update of w`, request.WalletUserID,
+	).Scan(&walletID, &balance, &userStatus)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return wallet.Hold{}, wallet.ErrHoldNotFound
 	}
 	if err != nil {
 		return wallet.Hold{}, fmt.Errorf("kunci wallet: %w", err)
+	}
+	if userStatus != "active" {
+		return wallet.Hold{}, wallet.ErrWalletBlocked
 	}
 	if err := transaction.QueryRow(ctx,
 		`select coalesce(sum(amount), 0) from wallet_holds where wallet_id = $1::uuid and status = 'active'`, walletID,

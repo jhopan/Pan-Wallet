@@ -9,6 +9,7 @@ import (
 
 	"github.com/jhopan/Pan-Wallet/internal/paypan"
 	"github.com/jhopan/Pan-Wallet/internal/topup"
+	"github.com/jhopan/Pan-Wallet/internal/wallet"
 )
 
 // ErrInvoiceNotFound dipakai saat invoice tidak ada.
@@ -24,13 +25,18 @@ func (store *Store) CreateTopupInvoice(ctx context.Context, client *paypan.Clien
 		return topup.Invoice{}, fmt.Errorf("nominal top-up maksimal Rp%d", topup.MaxPrice)
 	}
 
-	var exists int
-	if err := store.db.QueryRowContext(ctx,
-		`select count(*) from wallets where wallet_user_id = ?`, walletUserID).Scan(&exists); err != nil {
+	var status string
+	err := store.db.QueryRowContext(ctx, `
+		select u.status from wallets w join wallet_users u on u.id = w.wallet_user_id
+		where w.wallet_user_id = ?`, walletUserID).Scan(&status)
+	if errors.Is(err, sql.ErrNoRows) {
+		return topup.Invoice{}, ErrInvoiceNotFound
+	}
+	if err != nil {
 		return topup.Invoice{}, fmt.Errorf("cek wallet: %w", err)
 	}
-	if exists == 0 {
-		return topup.Invoice{}, ErrInvoiceNotFound
+	if status != "active" {
+		return topup.Invoice{}, wallet.ErrWalletBlocked
 	}
 
 	remote, err := client.CreateInvoice(ctx, price, "topup "+walletUserID)

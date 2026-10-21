@@ -17,6 +17,7 @@ func NewRenderer() *Renderer {
 		"home":     template.Must(template.New("home").Parse(layoutHTML + homeHTML)),
 		"topup":    template.Must(template.New("topup").Parse(layoutHTML + topupHTML)),
 		"config":   template.Must(template.New("config").Parse(layoutHTML + configHTML)),
+		"wallets":  template.Must(template.New("wallets").Parse(layoutHTML + walletsHTML)),
 		"ledger":   template.Must(template.New("ledger").Parse(layoutHTML + ledgerHTML)),
 		"keys":     template.Must(template.New("keys").Parse(layoutHTML + keysHTML)),
 		"checkout": template.Must(template.New("checkout").Parse(checkoutHTML)),
@@ -125,6 +126,7 @@ form.inline{display:inline}
 <div class="menu">
 <a href="/admin" class="{{if eq .Tab "home"}}on{{end}}"><span class="ico">▤</span> Dashboard</a>
 <a href="/admin/topup" class="{{if eq .Tab "topup"}}on{{end}}"><span class="ico">▣</span> Top-up QRIS</a>
+<a href="/admin/wallets" class="{{if eq .Tab "wallets"}}on{{end}}"><span class="ico">◉</span> Wallet User</a>
 <a href="/admin/ledger" class="{{if eq .Tab "ledger"}}on{{end}}"><span class="ico">▦</span> Mutasi Saldo</a>
 <a href="/admin/keys" class="{{if eq .Tab "keys"}}on{{end}}"><span class="ico">⧉</span> API Key Produk</a>
 <a href="/admin/config" class="{{if eq .Tab "config"}}on{{end}}"><span class="ico">⚙</span> Konfigurasi</a>
@@ -338,6 +340,39 @@ const keysHTML = `
 <td>{{if .Active}}<form class="inline" method="post" action="/admin/keys/{{.Product}}/revoke"><button class="sec" type="submit">nonaktifkan</button></form>{{else}}<small>-</small>{{end}}</td>
 </tr>
 {{else}}<tr><td colspan="5" class="empty">Belum ada API key</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
+`
+
+const walletsHTML = `
+<div class="card"><h2>Buat wallet user</h2>
+<form method="post" action="/admin/wallets">
+<div class="row">
+<div><label for="initial_balance">Saldo awal (opsional)</label>
+<input id="initial_balance" name="initial_balance" type="number" min="0" step="1" placeholder="0"></div>
+<div style="flex:0;align-self:flex-end"><button type="submit">Buat wallet</button></div>
+</div>
+</form>
+<small style="color:#667085;display:block;margin-top:10px">ID wallet dibuat otomatis. Saldo awal boleh 0, nanti diisi lewat top-up QRIS.</small>
+</div>
+<div class="card"><h2>Daftar wallet</h2><table>
+<tr><th>Dibuat</th><th>Wallet User ID</th><th>Status</th><th class="money">Saldo</th><th class="money">Tertahan</th><th class="money">Tersedia</th><th>Aksi</th></tr>
+{{range .Wallets}}<tr>
+<td><small>{{.CreatedAt}}</small></td>
+<td><code>{{.WalletUserID}}</code></td>
+<td><span class="badge {{.StatusClass}}">{{.StatusLabel}}</span></td>
+<td class="money">{{.Balance}}</td>
+<td class="money">{{.HeldActive}}</td>
+<td class="money"><b>{{.Available}}</b></td>
+<td>
+<a class="act" href="/admin/ledger?wallet={{.WalletUserID}}">mutasi</a>
+<form class="inline" method="post" action="/admin/wallets/{{.WalletUserID}}/status">
+{{if eq .StatusLabel "aktif"}}<button class="sec" name="status" value="blocked" type="submit">blokir</button>
+{{else}}<button class="sec" name="status" value="active" type="submit">aktifkan</button>{{end}}
+</form>
+</td>
+</tr>
+{{else}}<tr><td colspan="7" class="empty">Belum ada wallet</td></tr>{{end}}
 </table></div>
 </div></div></div></body></html>
 `
