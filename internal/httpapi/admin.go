@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -90,6 +91,11 @@ func (server *Server) adminTopupCreate(response http.ResponseWriter, request *ht
 		redirectWith(response, request, "/admin/topup", "err", "database belum siap")
 		return
 	}
+	client, err := server.paypanClient(request)
+	if err != nil {
+		redirectWith(response, request, "/admin/topup", "err", err.Error())
+		return
+	}
 	if err := request.ParseForm(); err != nil {
 		redirectWith(response, request, "/admin/topup", "err", "form tidak valid")
 		return
@@ -100,13 +106,12 @@ func (server *Server) adminTopupCreate(response http.ResponseWriter, request *ht
 		redirectWith(response, request, "/admin/topup", "err", "nominal tidak valid")
 		return
 	}
-	ttl := server.invoiceTTL(request)
-	invoice, err := server.deps.Topups.CreateTopupInvoice(request.Context(), walletUserID, price, ttl)
+	invoice, err := server.deps.Topups.CreateTopupInvoice(request.Context(), client, walletUserID, price)
 	if err != nil {
 		redirectWith(response, request, "/admin/topup", "err", err.Error())
 		return
 	}
-	redirectWith(response, request, "/admin/topup", "ok", "Invoice "+invoice.ID[:8]+" dibuat, total Rp"+Rupiah(invoice.Total))
+	redirectWith(response, request, "/admin/topup", "ok", "Invoice dibuat, total Rp"+Rupiah(invoice.Total))
 }
 
 func (server *Server) adminTopupPaid(response http.ResponseWriter, request *http.Request) {
@@ -114,8 +119,7 @@ func (server *Server) adminTopupPaid(response http.ResponseWriter, request *http
 		redirectWith(response, request, "/admin/topup", "err", "database belum siap")
 		return
 	}
-	invoiceID := request.PathValue("id")
-	invoice, err := server.deps.Topups.MarkTopupPaid(request.Context(), invoiceID, "manual-admin")
+	invoice, err := server.deps.Topups.MarkTopupPaidByLocalID(request.Context(), request.PathValue("id"), "manual-admin")
 	if err != nil {
 		redirectWith(response, request, "/admin/topup", "err", err.Error())
 		return
@@ -124,34 +128,38 @@ func (server *Server) adminTopupPaid(response http.ResponseWriter, request *http
 }
 
 func (server *Server) adminConfig(response http.ResponseWriter, request *http.Request) {
-	qrisBase := ""
-	ttlMinutes := 15
-	engine := "PostgreSQL"
+	paypanBase := ""
+	paypanToken := ""
+	webhookSecret := ""
+	webhookURL := ""
 	if server.deps.Settings != nil {
-		if value, err := server.deps.Settings.Setting(request.Context(), "qris_base"); err == nil {
-			qrisBase = value
-		}
-		if value, err := server.deps.Settings.Setting(request.Context(), "invoice_ttl_minutes"); err == nil && value != "" {
-			if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
-				ttlMinutes = parsed
-			}
-		}
+		paypanBase, _ = server.deps.Settings.Setting(request.Context(), "paypan_base_url")
+		paypanToken, _ = server.deps.Settings.Setting(request.Context(), "paypan_token")
+		webhookSecret, _ = server.deps.Settings.Setting(request.Context(), "paypan_webhook_secret")
 	}
-	qrisStatus := "belum diset"
-	if qrisBase != "" {
-		qrisStatus = "tersimpan"
+
+	scheme := "http"
+	if request.TLS != nil {
+		scheme = "https"
 	}
+	webhookURL = scheme + "://" + request.Host + "/webhook/paypan"
+
+	paypanStatus := "belum diset"
+	if paypanBase != "" && paypanToken != "" {
+		paypanStatus = "terisi"
+	}
+
 	data := map[string]any{
-		"Title":      "Konfigurasi",
-		"Tab":        "config",
-		"QrisBase":   qrisBase,
-		"TTLMinutes": ttlMinutes,
-		"QrisStatus": qrisStatus,
-		"Engine":     engine,
-		"Migrations": len(migrationsNames()),
-		"Flash":      request.URL.Query().Get("ok"),
-		"Error":      request.URL.Query().Get("err"),
-		"User":       server.adminUser(),
+		"Title":         "Konfigurasi",
+		"Tab":           "config",
+		"PaypanBase":    paypanBase,
+		"PaypanToken":   paypanToken,
+		"WebhookSecret": webhookSecret,
+		"WebhookURL":    webhookURL,
+		"PaypanStatus":  paypanStatus,
+		"Flash":         request.URL.Query().Get("ok"),
+		"Error":         request.URL.Query().Get("err"),
+		"User":          server.adminUser(),
 	}
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.renderer.Render("config", response, data)
@@ -166,24 +174,18 @@ func (server *Server) adminConfigSave(response http.ResponseWriter, request *htt
 		redirectWith(response, request, "/admin/config", "err", "form tidak valid")
 		return
 	}
-	qrisBase := request.FormValue("qris_base")
-	if qrisBase != "" {
-		if err := server.deps.Settings.SetSetting(request.Context(), "qris_base", qrisBase); err != nil {
+	fields := map[string]string{
+		"paypan_base_url":       request.FormValue("paypan_base_url"),
+		"paypan_token":          request.FormValue("paypan_token"),
+		"paypan_webhook_secret": request.FormValue("paypan_webhook_secret"),
+	}
+	for key, value := range fields {
+		if err := server.deps.Settings.SetSetting(request.Context(), key, strings.TrimSpace(value)); err != nil {
 			redirectWith(response, request, "/admin/config", "err", err.Error())
 			return
 		}
 	}
-	if ttl := request.FormValue("invoice_ttl_minutes"); ttl != "" {
-		if _, err := strconv.Atoi(ttl); err != nil {
-			redirectWith(response, request, "/admin/config", "err", "masa berlaku tidak valid")
-			return
-		}
-		if err := server.deps.Settings.SetSetting(request.Context(), "invoice_ttl_minutes", ttl); err != nil {
-			redirectWith(response, request, "/admin/config", "err", err.Error())
-			return
-		}
-	}
-	redirectWith(response, request, "/admin/config", "ok", "Konfigurasi disimpan.")
+	redirectWith(response, request, "/admin/config", "ok", "Konfigurasi PayPan disimpan.")
 }
 
 // invoiceTTL membaca masa berlaku invoice dari settings, default 15 menit.

@@ -96,11 +96,13 @@ create table if not exists app_settings (
   updated_at integer not null
 );
 
+-- Invoice top-up: id lokal + referensi invoice PayPan (gateway QRIS eksternal).
 create table if not exists topup_invoices (
   id text primary key,
   wallet_user_id text not null references wallet_users(id),
+  paypan_invoice_id text unique,
   price integer not null check (price >= 1000),
-  code integer not null check (code between 1 and 999),
+  code integer not null default 0,
   total integer not null check (total > 0),
   status text not null default 'pending' check (status in ('pending','paid','expired','cancelled')),
   source text not null default '',
@@ -109,9 +111,7 @@ create table if not exists topup_invoices (
   created_at integer not null
 );
 
--- Satu total hanya boleh dimiliki satu invoice pending (klaim nominal eksklusif).
-create unique index if not exists topup_invoices_pending_total_idx
-  on topup_invoices(total) where status = 'pending';
+create index if not exists topup_invoices_paypan_idx on topup_invoices(paypan_invoice_id);
 
 create table if not exists payment_notifications (
   id text primary key,

@@ -6,31 +6,36 @@ import (
 	"time"
 )
 
-// MinPrice adalah nominal top-up terendah. Di bawah ini kode 001-999 terlalu
-// besar porsinya terhadap total dan rawan bentrok nominal.
+// MinPrice adalah nominal top-up terendah yang diterima PayPan.
+// 3 digit terakhir dipakai PayPan sebagai kode unik invoice.
 const MinPrice int64 = 1000
 
-// Invoice mewakili satu permintaan top-up QRIS.
+// MaxPrice adalah batas atas PayPan (kode unik hanya 3 digit).
+const MaxPrice int64 = 9_000_000
+
+// Invoice mewakili satu permintaan top-up yang sudah dibuat di PayPan.
 type Invoice struct {
-	ID           string
-	WalletUserID string
-	Price        int64
-	Code         int
-	Total        int64
-	Status       string
-	Source       string
-	ExpiresAt    time.Time
+	ID            string
+	WalletUserID  string
+	PaypanInvoice string
+	Price         int64
+	Code          int
+	Total         int64
+	Status        string
+	Source        string
+	ExpiresAt     time.Time
+	PayURL        string
 }
 
 func (invoice Invoice) Validate() error {
 	if invoice.Price < MinPrice {
 		return fmt.Errorf("nominal top-up minimal Rp%d", MinPrice)
 	}
-	if invoice.Code < 1 || invoice.Code > 999 {
-		return fmt.Errorf("kode invoice harus 1-999")
+	if invoice.Price > MaxPrice {
+		return fmt.Errorf("nominal top-up maksimal Rp%d", MaxPrice)
 	}
-	if invoice.Total != invoice.Price+int64(invoice.Code) {
-		return fmt.Errorf("total harus sama dengan harga + kode")
+	if invoice.Total < invoice.Price {
+		return fmt.Errorf("total tidak boleh lebih kecil dari nominal")
 	}
 	return nil
 }
@@ -48,7 +53,21 @@ func CanTransition(from, to string) bool {
 	return false
 }
 
-// NormalizeSource membersihkan nama sumber pembayaran dari notifikasi.
+// NormalizeSource membersihkan nama sumber pembayaran.
 func NormalizeSource(source string) string {
 	return strings.TrimSpace(source)
+}
+
+// PaypanToLocalStatus memetakan status PayPan ke status lokal Pan-Wallet.
+func PaypanToLocalStatus(status string) string {
+	switch status {
+	case "paid":
+		return "paid"
+	case "expired":
+		return "expired"
+	case "refunded":
+		return "cancelled"
+	default:
+		return "pending"
+	}
 }

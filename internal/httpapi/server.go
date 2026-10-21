@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jhopan/Pan-Wallet/internal/auth"
+	"github.com/jhopan/Pan-Wallet/internal/paypan"
 	"github.com/jhopan/Pan-Wallet/internal/report"
 	"github.com/jhopan/Pan-Wallet/internal/topup"
 	"github.com/jhopan/Pan-Wallet/internal/wallet"
@@ -29,12 +30,14 @@ type OverviewStore interface {
 	Overview(context.Context) (report.Overview, error)
 }
 
-// TopupStore mengelola invoice top-up QRIS.
+// TopupStore mengelola invoice top-up lewat PayPan.
 type TopupStore interface {
-	CreateTopupInvoice(context.Context, string, int64, time.Duration) (topup.Invoice, error)
+	CreateTopupInvoice(context.Context, *paypan.Client, string, int64) (topup.Invoice, error)
 	TopupInvoice(context.Context, string) (topup.Invoice, error)
-	MarkTopupPaid(context.Context, string, string) (topup.Invoice, error)
+	MarkTopupPaidByPaypan(context.Context, string, string) (topup.Invoice, error)
+	MarkTopupPaidByLocalID(context.Context, string, string) (topup.Invoice, error)
 	RecentTopupInvoices(context.Context, int) ([]topup.Invoice, error)
+	ExpireTopupInvoice(context.Context, string) error
 }
 
 // SettingsStore menyimpan konfigurasi QRIS di database.
@@ -76,8 +79,8 @@ func (server *Server) routes() {
 	// Publik
 	mux.HandleFunc("GET /healthz", health)
 	mux.HandleFunc("GET /pay/{id}", server.checkout)
-	mux.HandleFunc("GET /pay/{id}/qr.png", server.checkoutQR)
 	mux.HandleFunc("GET /api/topup/{id}", server.topupStatus)
+	mux.HandleFunc("POST /webhook/paypan", server.paypanWebhook)
 	mux.HandleFunc("GET /admin/login", server.loginPage)
 	mux.HandleFunc("POST /admin/login", server.loginSubmit)
 	mux.HandleFunc("GET /admin/logout", server.logout)
@@ -88,6 +91,7 @@ func (server *Server) routes() {
 	mux.HandleFunc("GET /admin/topup", server.requireAdmin(server.adminTopup))
 	mux.HandleFunc("POST /admin/topup", server.requireAdmin(server.adminTopupCreate))
 	mux.HandleFunc("POST /admin/topup/{id}/paid", server.requireAdmin(server.adminTopupPaid))
+	mux.HandleFunc("POST /admin/topup/{id}/sync", server.requireAdmin(server.paypanReconcile))
 	mux.HandleFunc("GET /admin/config", server.requireAdmin(server.adminConfig))
 	mux.HandleFunc("POST /admin/config", server.requireAdmin(server.adminConfigSave))
 

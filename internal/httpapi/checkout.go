@@ -5,20 +5,20 @@ import (
 	"net/http"
 
 	"github.com/jhopan/Pan-Wallet/internal/database"
-	"github.com/jhopan/Pan-Wallet/internal/qris"
-	"github.com/jhopan/Pan-Wallet/internal/topup"
+	"github.com/jhopan/Pan-Wallet/internal/sqlite"
 )
 
 func migrationsNames() []string {
-	migrations := database.Migrations()
-	names := make([]string, 0, len(migrations))
-	for _, migration := range migrations {
-		names = append(names, migration.Name)
+	return []string{
+		"000001_wallet_core",
+		"000002_api_security",
+		"000003_hold_transitions",
+		"000004_qris_topup",
 	}
-	return names
 }
 
-// checkout merender halaman pembayaran QRIS untuk satu invoice.
+// checkout mengarahkan pelanggan ke halaman bayar PayPan.
+// Pan-Wallet tidak merender QR sendiri: PayPan yang memegang gateway.
 func (server *Server) checkout(response http.ResponseWriter, request *http.Request) {
 	if server.deps.Topups == nil {
 		http.Error(response, "database belum siap", http.StatusServiceUnavailable)
@@ -29,49 +29,19 @@ func (server *Server) checkout(response http.ResponseWriter, request *http.Reque
 		http.NotFound(response, request)
 		return
 	}
-	data := map[string]any{
-		"ID":          invoice.ID,
-		"Status":      invoice.Status,
-		"StatusLabel": statusLabel(invoice.Status),
-		"Total":       Rupiah(invoice.Total),
-		"ShowQR":      invoice.Status == "pending" && server.qrisReady(request),
-	}
-	response.Header().Set("Content-Type", "text/html; charset=utf-8")
-	server.renderer.Render("checkout", response, data)
-}
 
-// checkoutQR mengirim gambar QR dinamis untuk invoice yang masih pending.
-func (server *Server) checkoutQR(response http.ResponseWriter, request *http.Request) {
-	if server.deps.Topups == nil || server.deps.Settings == nil {
-		http.Error(response, "belum siap", http.StatusServiceUnavailable)
-		return
-	}
-	invoice, err := server.deps.Topups.TopupInvoice(request.Context(), request.PathValue("id"))
+	client, err := server.paypanClient(request)
 	if err != nil {
-		http.NotFound(response, request)
+		http.Error(response, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	if invoice.Status != "pending" {
-		http.Error(response, "QR tidak tersedia", http.StatusNotFound)
-		return
-	}
-	static, err := server.deps.Settings.Setting(request.Context(), "qris_base")
-	if err != nil || static == "" {
-		http.Error(response, "QRIS belum dikonfigurasi", http.StatusServiceUnavailable)
-		return
-	}
-	payload, err := qris.BuildDynamic(static, invoice.Total)
+	remote, err := client.GetInvoice(request.Context(), invoice.PaypanInvoice)
 	if err != nil {
-		http.Error(response, err.Error(), http.StatusInternalServerError)
+		http.Error(response, "gagal membaca invoice PayPan: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	png, err := encodeQR(payload)
-	if err != nil {
-		http.Error(response, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	response.Header().Set("Content-Type", "image/png")
-	response.Write(png)
+	target := client.BaseURL() + remote.PayURL
+	http.Redirect(response, request, target, http.StatusFound)
 }
 
 // topupStatus adalah API ringan yang dipoll halaman checkout.
@@ -81,7 +51,7 @@ func (server *Server) topupStatus(response http.ResponseWriter, request *http.Re
 		return
 	}
 	invoice, err := server.deps.Topups.TopupInvoice(request.Context(), request.PathValue("id"))
-	if errors.Is(err, database.ErrInvoiceNotFound) {
+	if errors.Is(err, database.ErrInvoiceNotFound) || errors.Is(err, sqlite.ErrInvoiceNotFound) {
 		writeError(response, http.StatusNotFound, "invoice tidak ditemukan")
 		return
 	}
@@ -95,29 +65,6 @@ func (server *Server) topupStatus(response http.ResponseWriter, request *http.Re
 		"total":  invoice.Total,
 	})
 }
-
-func (server *Server) qrisReady(request *http.Request) bool {
-	if server.deps.Settings == nil {
-		return false
-	}
-	static, err := server.deps.Settings.Setting(request.Context(), "qris_base")
-	return err == nil && static != ""
-}
-
-func statusLabel(status string) string {
-	switch status {
-	case "paid":
-		return "LUNAS"
-	case "expired":
-		return "KADALUARSA"
-	case "cancelled":
-		return "DIBATALKAN"
-	default:
-		return "MENUNGGU PEMBAYARAN"
-	}
-}
-
-var _ = topup.MinPrice
 
 // statusLabelID menerjemahkan status invoice untuk tampilan panel.
 func statusLabelID(status string) string {

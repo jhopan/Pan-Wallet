@@ -7,120 +7,57 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jhopan/Pan-Wallet/internal/paypan"
 	"github.com/jhopan/Pan-Wallet/internal/topup"
 )
 
-// ErrNoCodeAvailable muncul saat semua kode 1-999 untuk harga itu sudah dipakai.
-var ErrNoCodeAvailable = errors.New("kode invoice habis untuk nominal ini")
-
-// ErrInvoiceNotFound dipakai saat invoice tidak ada atau bukan milik wallet.
+// ErrInvoiceNotFound dipakai saat invoice tidak ada.
 var ErrInvoiceNotFound = errors.New("invoice tidak ditemukan")
 
-// CreateTopupInvoice mengklaim satu total unik untuk wallet lalu menyimpan
-// invoice. Klaim atomik: kalau ada balapan UNIQUE pada total, coba kode lain.
-func (store *Store) CreateTopupInvoice(ctx context.Context, walletUserID string, price int64, ttl time.Duration) (topup.Invoice, error) {
+// CreateTopupInvoice meminta invoice ke PayPan lalu menyimpan catatan lokal.
+func (store *Store) CreateTopupInvoice(ctx context.Context, client *paypan.Client, walletUserID string, price int64) (topup.Invoice, error) {
 	if price < topup.MinPrice {
 		return topup.Invoice{}, fmt.Errorf("nominal top-up minimal Rp%d", topup.MinPrice)
 	}
-
-	for attempt := 0; attempt < 30; attempt++ {
-		invoice, err := store.tryCreateInvoice(ctx, walletUserID, price, ttl)
-		if err == nil {
-			return invoice, nil
-		}
-		if errors.Is(err, ErrNoCodeAvailable) {
-			return topup.Invoice{}, err
-		}
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			// Balapan klaim total: coba kode berikutnya.
-			continue
-		}
-		return topup.Invoice{}, err
+	if price > topup.MaxPrice {
+		return topup.Invoice{}, fmt.Errorf("nominal top-up maksimal Rp%d", topup.MaxPrice)
 	}
-	return topup.Invoice{}, ErrNoCodeAvailable
-}
-
-func (store *Store) tryCreateInvoice(ctx context.Context, walletUserID string, price int64, ttl time.Duration) (topup.Invoice, error) {
-	transaction, err := store.pool.Begin(ctx)
-	if err != nil {
-		return topup.Invoice{}, fmt.Errorf("mulai invoice: %w", err)
-	}
-	defer transaction.Rollback(ctx)
 
 	var walletID string
-	if err := transaction.QueryRow(ctx,
-		`select id::text from wallets where wallet_user_id = $1::uuid`, walletUserID,
-	).Scan(&walletID); errors.Is(err, pgx.ErrNoRows) {
+	err := store.pool.QueryRow(ctx,
+		`select id::text from wallets where wallet_user_id = $1::uuid`, walletUserID).Scan(&walletID)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return topup.Invoice{}, ErrInvoiceNotFound
-	} else if err != nil {
+	}
+	if err != nil {
 		return topup.Invoice{}, fmt.Errorf("cari wallet: %w", err)
 	}
 
-	// Kode yang sudah dipakai untuk harga sama (invoice pending).
-	usedRows, err := transaction.Query(ctx,
-		`select code from topup_invoices where price = $1 and status = 'pending'`, price)
+	remote, err := client.CreateInvoice(ctx, price, "topup "+walletUserID)
 	if err != nil {
-		return topup.Invoice{}, fmt.Errorf("baca kode terpakai: %w", err)
+		return topup.Invoice{}, fmt.Errorf("PayPan: %w", err)
 	}
-	var used []int
-	for usedRows.Next() {
-		var code int
-		if err := usedRows.Scan(&code); err != nil {
-			usedRows.Close()
-			return topup.Invoice{}, err
-		}
-		used = append(used, code)
-	}
-	usedRows.Close()
-
-	// Semua total yang masih diklaim invoice pending (lintas level harga).
-	totalRows, err := transaction.Query(ctx,
-		`select total from topup_invoices where status = 'pending'`)
-	if err != nil {
-		return topup.Invoice{}, fmt.Errorf("baca total terklaim: %w", err)
-	}
-	var claimed []int64
-	for totalRows.Next() {
-		var total int64
-		if err := totalRows.Scan(&total); err != nil {
-			totalRows.Close()
-			return topup.Invoice{}, err
-		}
-		claimed = append(claimed, total)
-	}
-	totalRows.Close()
-
-	code := topup.AllocateCode(price, used, claimed)
-	if code == 0 {
-		return topup.Invoice{}, ErrNoCodeAvailable
-	}
-	total := topup.Total(price, code)
 
 	var invoice topup.Invoice
-	err = transaction.QueryRow(ctx, `
-		insert into topup_invoices (wallet_user_id, price, code, total, status, expires_at)
-		values ($1::uuid, $2, $3, $4, 'pending', $5)
-		returning id::text, wallet_user_id::text, price, code, total, status, expires_at`,
-		walletUserID, price, code, total, time.Now().Add(ttl),
-	).Scan(&invoice.ID, &invoice.WalletUserID, &invoice.Price, &invoice.Code, &invoice.Total, &invoice.Status, &invoice.ExpiresAt)
+	err = store.pool.QueryRow(ctx, `
+		insert into topup_invoices (wallet_user_id, paypan_invoice_id, price, code, total, status, expires_at)
+		values ($1::uuid, $2, $3, $4, $5, 'pending', $6)
+		returning id::text, wallet_user_id::text, paypan_invoice_id, price, code, total, status, expires_at`,
+		walletUserID, remote.ID, remote.Price, remote.Code, remote.Total, time.Unix(remote.ExpiresAt, 0),
+	).Scan(&invoice.ID, &invoice.WalletUserID, &invoice.PaypanInvoice, &invoice.Price,
+		&invoice.Code, &invoice.Total, &invoice.Status, &invoice.ExpiresAt)
 	if err != nil {
-		return topup.Invoice{}, err
-	}
-
-	if err := transaction.Commit(ctx); err != nil {
 		return topup.Invoice{}, fmt.Errorf("simpan invoice: %w", err)
 	}
+	invoice.PayURL = remote.PayURL
 	return invoice, nil
 }
 
-// MarkTopupPaid menandai invoice lunas dan mengkredit saldo sekali saja.
-// Idempotent: invoice yang sudah paid mengembalikan hasil tanpa kredit ulang.
-func (store *Store) MarkTopupPaid(ctx context.Context, invoiceID, source string) (topup.Invoice, error) {
+// MarkTopupPaidByPaypan menandai lunas dan mengkredit saldo sekali saja.
+func (store *Store) MarkTopupPaidByPaypan(ctx context.Context, paypanInvoiceID, source string) (topup.Invoice, error) {
 	transaction, err := store.pool.Begin(ctx)
 	if err != nil {
-		return topup.Invoice{}, fmt.Errorf("mulai lunas: %w", err)
+		return topup.Invoice{}, fmt.Errorf("mulai pelunasan: %w", err)
 	}
 	defer transaction.Rollback(ctx)
 
@@ -129,8 +66,9 @@ func (store *Store) MarkTopupPaid(ctx context.Context, invoiceID, source string)
 	err = transaction.QueryRow(ctx, `
 		select i.id::text, i.wallet_user_id::text, i.price, i.code, i.total, i.status, i.expires_at, w.id::text
 		from topup_invoices i join wallets w on w.wallet_user_id = i.wallet_user_id
-		where i.id = $1::uuid for update of i`, invoiceID,
-	).Scan(&invoice.ID, &invoice.WalletUserID, &invoice.Price, &invoice.Code, &invoice.Total, &invoice.Status, &invoice.ExpiresAt, &walletID)
+		where i.paypan_invoice_id = $1 for update of i`, paypanInvoiceID,
+	).Scan(&invoice.ID, &invoice.WalletUserID, &invoice.Price, &invoice.Code,
+		&invoice.Total, &invoice.Status, &invoice.ExpiresAt, &walletID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return topup.Invoice{}, ErrInvoiceNotFound
 	}
@@ -151,19 +89,16 @@ func (store *Store) MarkTopupPaid(ctx context.Context, invoiceID, source string)
 	).Scan(&balanceAfter); err != nil {
 		return topup.Invoice{}, fmt.Errorf("kredit saldo: %w", err)
 	}
-
 	if _, err := transaction.Exec(ctx, `
 		insert into wallet_ledger (wallet_id, amount, balance_after, entry_type, product, reference_id, idempotency_key)
 		values ($1::uuid, $2, $3, 'topup', 'topup-qris', $4, $5)`,
-		walletID, invoice.Total, balanceAfter, invoice.ID, "topup:"+invoice.ID,
+		walletID, invoice.Total, balanceAfter, paypanInvoiceID, "topup:"+paypanInvoiceID,
 	); err != nil {
-		return topup.Invoice{}, fmt.Errorf("catat ledger topup: %w", err)
+		return topup.Invoice{}, fmt.Errorf("catat ledger: %w", err)
 	}
-
-	if _, err := transaction.Exec(ctx, `
-		update topup_invoices set status = 'paid', paid_at = now(), source = $2 where id = $1::uuid`,
-		invoice.ID, topup.NormalizeSource(source),
-	); err != nil {
+	if _, err := transaction.Exec(ctx,
+		`update topup_invoices set status = 'paid', paid_at = now(), source = $2 where id = $1::uuid`,
+		invoice.ID, topup.NormalizeSource(source)); err != nil {
 		return topup.Invoice{}, fmt.Errorf("tandai lunas: %w", err)
 	}
 	invoice.Status = "paid"
@@ -171,4 +106,28 @@ func (store *Store) MarkTopupPaid(ctx context.Context, invoiceID, source string)
 		return topup.Invoice{}, fmt.Errorf("simpan pelunasan: %w", err)
 	}
 	return invoice, nil
+}
+
+// MarkTopupPaidByLocalID dipakai panel admin saat menandai lunas manual.
+func (store *Store) MarkTopupPaidByLocalID(ctx context.Context, localID, source string) (topup.Invoice, error) {
+	var paypanID string
+	err := store.pool.QueryRow(ctx,
+		`select coalesce(paypan_invoice_id,'') from topup_invoices where id = $1::uuid`, localID).Scan(&paypanID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return topup.Invoice{}, ErrInvoiceNotFound
+	}
+	if err != nil {
+		return topup.Invoice{}, fmt.Errorf("cari invoice: %w", err)
+	}
+	if paypanID == "" {
+		return topup.Invoice{}, fmt.Errorf("invoice tanpa referensi PayPan")
+	}
+	return store.MarkTopupPaidByPaypan(ctx, paypanID, source)
+}
+
+// ExpireTopupInvoice menandai invoice pending sebagai kedaluwarsa.
+func (store *Store) ExpireTopupInvoice(ctx context.Context, localID string) error {
+	_, err := store.pool.Exec(ctx,
+		`update topup_invoices set status = 'expired' where id = $1::uuid and status = 'pending'`, localID)
+	return err
 }

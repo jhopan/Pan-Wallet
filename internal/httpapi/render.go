@@ -174,7 +174,10 @@ const topupHTML = `
 <td class="money">{{.Code}}</td>
 <td class="money"><b>{{.Total}}</b></td>
 <td><a class="act" href="/pay/{{.ID}}">checkout</a>
-{{if eq .Status "pending"}}<form class="inline" method="post" action="/admin/topup/{{.ID}}/paid"><button class="sec" type="submit">lunas</button></form>{{end}}</td>
+{{if eq .Status "pending"}}
+<form class="inline" method="post" action="/admin/topup/{{.ID}}/sync"><button class="sec" type="submit" title="Cek status ke PayPan">sync</button></form>
+<form class="inline" method="post" action="/admin/topup/{{.ID}}/paid"><button class="sec" type="submit" title="Tandai lunas manual">lunas</button></form>
+{{end}}</td>
 </tr>
 {{else}}<tr><td colspan="7" class="empty">Belum ada invoice</td></tr>{{end}}
 </table></div>
@@ -182,21 +185,22 @@ const topupHTML = `
 `
 
 const configHTML = `
-<div class="card"><h2>QRIS</h2>
+<div class="card"><h2>PayPan (gateway QRIS)</h2>
 <form method="post" action="/admin/config">
-<label for="qris_base">Payload QRIS statis</label>
-<textarea id="qris_base" name="qris_base" rows="4" placeholder="000201010211...5802ID...6304XXXX">{{.QrisBase}}</textarea>
-<small style="color:#667085">Tempel payload QRIS statis dari aplikasi merchant. Nominal diisi otomatis per invoice.</small>
-<div class="row" style="margin-top:14px">
-<div><label for="invoice_ttl_minutes">Masa berlaku invoice (menit)</label><input id="invoice_ttl_minutes" name="invoice_ttl_minutes" type="number" min="1" max="120" value="{{.TTLMinutes}}"></div>
-<div style="flex:0;align-self:flex-end"><button type="submit">Simpan</button></div>
+<label for="paypan_base_url">Base URL PayPan</label>
+<input id="paypan_base_url" name="paypan_base_url" placeholder="https://paypan.jhopan.my.id" value="{{.PaypanBase}}">
+<label for="paypan_token">Token API (scope order)</label>
+<input id="paypan_token" name="paypan_token" placeholder="pp_xxxxxxxxxxxxxxxx" value="{{.PaypanToken}}">
+<label for="paypan_webhook_secret">Webhook secret</label>
+<input id="paypan_webhook_secret" name="paypan_webhook_secret" placeholder="pp_xxxxxxxxxxxxxxxx" value="{{.WebhookSecret}}">
+<div style="margin-top:16px"><button type="submit">Simpan</button></div>
+</form>
+<table style="margin-top:18px">
+<tr><th>Status konfigurasi</th><td>{{.PaypanStatus}}</td></tr>
+<tr><th>URL webhook untuk PayPan</th><td><code>{{.WebhookURL}}</code></td></tr>
+</table>
+<small style="color:#667085;display:block;margin-top:10px">Daftarkan URL webhook di atas ke admin PayPan &rarr; Konfigurasi &rarr; Webhook, lalu salin secret-nya ke kolom Webhook secret.</small>
 </div>
-</form></div>
-<div class="card"><h2>Info sistem</h2><table>
-<tr><th>Status QRIS</th><td>{{.QrisStatus}}</td></tr>
-<tr><th>Engine database</th><td>{{.Engine}}</td></tr>
-<tr><th>Jumlah migrasi</th><td>{{.Migrations}}</td></tr>
-</table></div>
 </div></div></div></body></html>
 `
 

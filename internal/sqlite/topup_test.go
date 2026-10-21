@@ -2,97 +2,132 @@ package sqlite
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
-	"time"
+
+	"github.com/jhopan/Pan-Wallet/internal/paypan"
 )
 
-func TestCreateTopupInvoiceClaimsUniqueTotal(t *testing.T) {
+// fakePaypan meniru POST /api/invoice dan GET /api/invoice/{id}.
+func fakePaypan(t *testing.T, total int64) (*httptest.Server, *paypan.Client) {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/invoice":
+			var body struct {
+				Price int64 `json:"price"`
+			}
+			json.NewDecoder(r.Body).Decode(&body)
+			w.Write([]byte(`{"ok":true,"data":{"id":"pp_inv_1","price":` +
+				itoa(body.Price) + `,"code":12,"total":` + itoa(total) +
+				`,"status":"pending","expires_at":1900000000,"pay_url":"/pay/pp_inv_1"}}`))
+		case r.Method == http.MethodGet:
+			w.Write([]byte(`{"ok":true,"data":{"id":"pp_inv_1","status":"paid","price":50000,"code":12,"total":` + itoa(total) + `}}`))
+		default:
+			w.WriteHeader(404)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server, paypan.NewClient(server.URL, "pp_test")
+}
+
+func itoa(v int64) string {
+	if v == 0 {
+		return "0"
+	}
+	digits := ""
+	for v > 0 {
+		digits = string(rune('0'+v%10)) + digits
+		v /= 10
+	}
+	return digits
+}
+
+func TestCreateTopupInvoiceUsesPaypan(t *testing.T) {
 	store := newTestStore(t)
 	userID := seedWallet(t, store, 0)
-	ctx := context.Background()
+	_, client := fakePaypan(t, 50_012)
 
-	first, err := store.CreateTopupInvoice(ctx, userID, 25_000, 15*time.Minute)
+	invoice, err := store.CreateTopupInvoice(context.Background(), client, userID, 50_000)
 	if err != nil {
-		t.Fatalf("invoice pertama: %v", err)
+		t.Fatalf("CreateTopupInvoice: %v", err)
 	}
-	if first.Code != 1 || first.Total != 25_001 {
-		t.Fatalf("invoice pertama code=%d total=%d, want code=1 total=25001", first.Code, first.Total)
+	if invoice.PaypanInvoice != "pp_inv_1" {
+		t.Fatalf("paypan invoice = %q", invoice.PaypanInvoice)
 	}
-
-	second, err := store.CreateTopupInvoice(ctx, userID, 25_000, 15*time.Minute)
-	if err != nil {
-		t.Fatalf("invoice kedua: %v", err)
+	if invoice.Total != 50_012 {
+		t.Fatalf("total = %d, want 50012 dari PayPan", invoice.Total)
 	}
-	if second.Code != 2 || second.Total != 25_002 {
-		t.Fatalf("invoice kedua code=%d total=%d, want code=2 total=25002", second.Code, second.Total)
-	}
-	if first.Total == second.Total {
-		t.Fatal("dua invoice tidak boleh punya total sama")
+	if invoice.Status != "pending" {
+		t.Fatalf("status = %q", invoice.Status)
 	}
 }
 
-func TestMarkTopupPaidCreditsOnce(t *testing.T) {
+func TestMarkPaidByPaypanCreditsOnce(t *testing.T) {
 	store := newTestStore(t)
 	userID := seedWallet(t, store, 10_000)
+	_, client := fakePaypan(t, 50_012)
 	ctx := context.Background()
 
-	invoice, err := store.CreateTopupInvoice(ctx, userID, 50_000, 15*time.Minute)
-	if err != nil {
+	if _, err := store.CreateTopupInvoice(ctx, client, userID, 50_000); err != nil {
 		t.Fatalf("buat invoice: %v", err)
 	}
 
-	paid, err := store.MarkTopupPaid(ctx, invoice.ID, "manual-admin")
+	paid, err := store.MarkTopupPaidByPaypan(ctx, "pp_inv_1", "paypan-webhook")
 	if err != nil {
-		t.Fatalf("MarkTopupPaid: %v", err)
+		t.Fatalf("MarkTopupPaidByPaypan: %v", err)
 	}
 	if paid.Status != "paid" {
 		t.Fatalf("status = %q, want paid", paid.Status)
 	}
 
 	overview, _ := store.Overview(ctx)
-	if overview.Wallets[0].Balance != 60_001 {
-		t.Fatalf("Balance = %d, want 60001 (10000 + 50001)", overview.Wallets[0].Balance)
+	if overview.Wallets[0].Balance != 60_012 {
+		t.Fatalf("Balance = %d, want 60012", overview.Wallets[0].Balance)
 	}
 	if overview.LedgerCount != 1 {
 		t.Fatalf("LedgerCount = %d, want 1", overview.LedgerCount)
 	}
 
-	// Klik lunas kedua: tidak boleh menambah saldo/ledger.
-	if _, err := store.MarkTopupPaid(ctx, invoice.ID, "manual-admin"); err != nil {
-		t.Fatalf("pelunasan ulang harus idempotent: %v", err)
+	// Webhook dobel: tidak boleh kredit lagi.
+	if _, err := store.MarkTopupPaidByPaypan(ctx, "pp_inv_1", "paypan-webhook"); err != nil {
+		t.Fatalf("webhook ulang harus idempotent: %v", err)
 	}
 	overview, _ = store.Overview(ctx)
-	if overview.Wallets[0].Balance != 60_001 {
-		t.Fatalf("Balance setelah pelunasan ulang = %d, want 60001", overview.Wallets[0].Balance)
+	if overview.Wallets[0].Balance != 60_012 {
+		t.Fatalf("Balance setelah webhook ulang = %d, want 60012", overview.Wallets[0].Balance)
 	}
 	if overview.LedgerCount != 1 {
-		t.Fatalf("LedgerCount setelah pelunasan ulang = %d, want 1", overview.LedgerCount)
+		t.Fatalf("LedgerCount setelah webhook ulang = %d, want 1", overview.LedgerCount)
 	}
 }
 
-func TestTopupInvoiceLookupAndList(t *testing.T) {
+func TestTopupInvoiceLookupByPaypanID(t *testing.T) {
 	store := newTestStore(t)
 	userID := seedWallet(t, store, 0)
+	_, client := fakePaypan(t, 20_005)
 	ctx := context.Background()
 
-	created, err := store.CreateTopupInvoice(ctx, userID, 20_000, 15*time.Minute)
+	created, err := store.CreateTopupInvoice(ctx, client, userID, 20_000)
 	if err != nil {
 		t.Fatalf("buat invoice: %v", err)
 	}
 
-	found, err := store.TopupInvoice(ctx, created.ID)
+	byLocal, err := store.TopupInvoice(ctx, created.ID)
 	if err != nil {
 		t.Fatalf("TopupInvoice: %v", err)
 	}
-	if found.Total != created.Total || found.Status != "pending" {
-		t.Fatalf("invoice tidak cocok: %+v", found)
+	if byLocal.Total != created.Total {
+		t.Fatalf("total tidak cocok")
 	}
 
-	list, err := store.RecentTopupInvoices(ctx, 10)
+	byPaypan, err := store.TopupInvoiceByPaypan(ctx, "pp_inv_1")
 	if err != nil {
-		t.Fatalf("RecentTopupInvoices: %v", err)
+		t.Fatalf("TopupInvoiceByPaypan: %v", err)
 	}
-	if len(list) != 1 || list[0].ID != created.ID {
-		t.Fatalf("daftar invoice tidak memuat invoice baru: %+v", list)
+	if byPaypan.ID != created.ID {
+		t.Fatalf("invoice id = %q, want %q", byPaypan.ID, created.ID)
 	}
 }

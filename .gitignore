@@ -27,3 +27,5 @@ preview-404.html
 preview-*.html
 shot-*.png
 .chrome-tmp/
+.demo-ids
+paypan-local.log

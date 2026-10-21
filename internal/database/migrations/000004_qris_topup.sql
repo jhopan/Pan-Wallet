@@ -23,8 +23,9 @@ create table if not exists topup_invoices (
 
 -- Satu total hanya boleh dimiliki satu invoice aktif: ini yang membuat nominal
 -- menjadi identitas pembayaran yang tidak ambigu.
-create unique index if not exists topup_invoices_pending_total_idx
-  on topup_invoices(total) where status = 'pending';
+-- PayPan yang menjamin keunikan nominal; Pan-Wallet hanya menyimpan referensi.
+alter table topup_invoices add column if not exists paypan_invoice_id text unique;
+create index if not exists topup_invoices_paypan_idx on topup_invoices(paypan_invoice_id);
 
 create index if not exists topup_invoices_wallet_idx
   on topup_invoices(wallet_user_id, created_at desc);
