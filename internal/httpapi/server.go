@@ -20,9 +20,12 @@ type ProductAuthenticator interface {
 	Authenticate(context.Context, string) (string, error)
 }
 
-// HoldStore menyimpan hold produk.
+// HoldStore menyimpan hold produk dan transisinya.
 type HoldStore interface {
 	CreateHold(context.Context, wallet.CreateHoldRequest, time.Time) (wallet.Hold, error)
+	CaptureHold(context.Context, wallet.TransitionRequest) (wallet.Hold, error)
+	ReleaseHold(context.Context, wallet.TransitionRequest) (wallet.Hold, error)
+	WalletBalance(context.Context, string) (report.OverviewWallet, error)
 }
 
 // OverviewStore menyediakan ringkasan saldo untuk dashboard.
@@ -97,6 +100,9 @@ func (server *Server) routes() {
 
 	// API produk (butuh product key)
 	mux.HandleFunc("POST /v1/holds", server.requireProductAuth(server.hold))
+	mux.HandleFunc("POST /v1/holds/{id}/capture", server.requireProductAuth(server.capture))
+	mux.HandleFunc("POST /v1/holds/{id}/release", server.requireProductAuth(server.release))
+	mux.HandleFunc("GET /v1/wallets/{id}", server.requireProductAuth(server.walletBalance))
 }
 
 func (server *Server) requireProductAuth(next http.HandlerFunc) http.HandlerFunc {

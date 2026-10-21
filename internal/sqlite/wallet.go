@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jhopan/Pan-Wallet/internal/report"
 	"github.com/jhopan/Pan-Wallet/internal/wallet"
 )
 
@@ -233,4 +234,22 @@ func (store *Store) transitionHold(ctx context.Context, request wallet.Transitio
 		return wallet.Hold{}, fmt.Errorf("simpan transisi: %w", err)
 	}
 	return hold, nil
+}
+
+// WalletBalance mengembalikan saldo tersimpan, tertahan, dan tersedia.
+func (store *Store) WalletBalance(ctx context.Context, walletUserID string) (report.OverviewWallet, error) {
+	var item report.OverviewWallet
+	err := store.db.QueryRowContext(ctx, `
+		select w.wallet_user_id, w.balance, w.currency,
+		       coalesce((select sum(h.amount) from wallet_holds h where h.wallet_id = w.id and h.status = 'active'), 0)
+		from wallets w where w.wallet_user_id = ?`, walletUserID,
+	).Scan(&item.WalletUserID, &item.Balance, &item.Currency, &item.HeldActive)
+	if errors.Is(err, sql.ErrNoRows) {
+		return report.OverviewWallet{}, wallet.ErrHoldNotFound
+	}
+	if err != nil {
+		return report.OverviewWallet{}, fmt.Errorf("baca saldo: %w", err)
+	}
+	item.Available = item.Balance - item.HeldActive
+	return item, nil
 }

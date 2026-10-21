@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/jhopan/Pan-Wallet/internal/report"
 	"github.com/jhopan/Pan-Wallet/internal/wallet"
 )
 
@@ -19,6 +20,18 @@ type fakeHoldStore struct {
 func (store *fakeHoldStore) CreateHold(_ context.Context, request wallet.CreateHoldRequest, _ time.Time) (wallet.Hold, error) {
 	store.request = request
 	return wallet.Hold{ID: "11111111-1111-1111-1111-111111111111", Product: request.Product, Status: "active"}, nil
+}
+
+func (store *fakeHoldStore) CaptureHold(context.Context, wallet.TransitionRequest) (wallet.Hold, error) {
+	return wallet.Hold{Status: "captured"}, nil
+}
+
+func (store *fakeHoldStore) ReleaseHold(context.Context, wallet.TransitionRequest) (wallet.Hold, error) {
+	return wallet.Hold{Status: "released"}, nil
+}
+
+func (store *fakeHoldStore) WalletBalance(context.Context, string) (report.OverviewWallet, error) {
+	return report.OverviewWallet{}, nil
 }
 
 func TestHoldUsesAuthenticatedProductScope(t *testing.T) {
