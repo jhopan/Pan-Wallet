@@ -19,3 +19,12 @@ create table if not exists wallet_admin_audit (
 
 create index if not exists wallet_admin_audit_user_created_idx
   on wallet_admin_audit(wallet_user_id, created_at desc);
+
+create table if not exists identity_link_codes (
+  code text primary key,
+  provider text not null,
+  external_id text not null,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);

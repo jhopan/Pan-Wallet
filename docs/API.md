@@ -243,6 +243,119 @@ Setelah pelanggan bayar, webhook PayPan menambah saldo otomatis.
 
 `403` bila wallet diblokir.
 
+
+---
+
+## 6c. Identitas: satu saldo untuk semua channel
+
+**Telegram adalah identitas primer.** Telegram ID diberikan oleh server Telegram,
+tidak bisa dipalsukan pelanggan — jadi aman dijadikan kunci.
+
+Channel lain (WhatsApp, email, web) **ditaulukan** ke wallet yang sama lewat kode
+6 angka yang dikonfirmasi di Telegram. Tidak perlu kirim email sama sekali.
+
+```
+Telegram ID 123456789  ──►  ID Pelanggan JKCUX8CK  ──►  Saldo
+Email budi@gmail.com   ──┘
+WhatsApp 628123456789  ──┘
+```
+
+### `POST /v1/identity/resolve` — bot tanya "ini siapa?"
+
+Dipanggil bot setiap pelanggan chat.
+
+```bash
+curl -s -X POST https://wallet.domain/v1/identity/resolve \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"telegram","external_id":"123456789"}'
+```
+
+```json
+{
+  "public_id": "JKCUX8CK",
+  "balance": 0,
+  "held": 0,
+  "available": 0,
+  "currency": "IDR",
+  "status": "active",
+  "is_new": true
+}
+```
+
+- **Telegram**: kalau belum ada, wallet dibuat otomatis (`is_new: true`).
+- **Email/WhatsApp/web**: kalau belum tertaut, balas `404` — pelanggan harus mengikat dulu.
+
+### `POST /v1/identity/link/start` — minta kode ikat
+
+Dipanggil website saat pelanggan memasukkan email.
+
+```bash
+curl -s -X POST https://wallet.domain/v1/identity/link/start \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"email","external_id":"Budi@Gmail.com"}'
+```
+
+```json
+{
+  "code": "674089",
+  "instruction": "Buka bot Telegram Pan-Wallet, lalu kirim:\n\n/ikat 674089\n\nKode berlaku 10 menit.",
+  "expires_in": 600
+}
+```
+
+Tampilkan `instruction` ke pelanggan. Kode berlaku 10 menit.
+
+`409` bila identitas itu sudah tertaut ke akun lain.
+
+### `POST /v1/identity/link/confirm` — bot Telegram konfirmasi
+
+Dipanggil bot saat pelanggan mengirim `/ikat 674089`.
+
+```bash
+curl -s -X POST https://wallet.domain/v1/identity/link/confirm \
+  -H "Content-Type: application/json" \
+  -d '{"code":"674089","telegram_id":"123456789"}'
+```
+
+```json
+{"public_id": "JKCUX8CK", "linked": true}
+```
+
+Setelah ini, `resolve` dengan email tersebut mengembalikan wallet yang sama.
+
+### `GET /v1/public/{id}/identities` — lihat channel tertaut
+
+```json
+{
+  "public_id": "JKCUX8CK",
+  "links": ["email:budi@gmail.com", "telegram:123456789"]
+}
+```
+
+### Aturan keamanan
+
+| Aturan | Alasan |
+|---|---|
+| Hanya Telegram yang boleh membuat wallet otomatis | Telegram ID tidak bisa dipalsukan |
+| Channel lain wajib lewat kode + konfirmasi Telegram | Mencegah orang menautkan email/nomor orang lain |
+| Kode sekali pakai, berlaku 10 menit | Mencegah dipakai ulang |
+| Identitas yang sudah tertaut tidak bisa direbut | Mencegah pengambilalihan akun |
+| Email dinormalisasi ke huruf kecil | `Budi@Gmail.com` = `budi@gmail.com` |
+| Nomor WA dinormalisasi ke format 62 | `0812...` = `62812...` |
+
+### Contoh alur website
+
+```
+1. Pelanggan buka website, masukkan email budi@gmail.com
+2. Website -> POST /v1/identity/link/start {provider:"email", external_id:"budi@gmail.com"}
+3. Website tampilkan: "Kirim /ikat 674089 ke bot Telegram Pan-Wallet"
+4. Pelanggan buka Telegram, kirim /ikat 674089
+5. Bot -> POST /v1/identity/link/confirm {code:"674089", telegram_id:"123456789"}
+6. Bot: "Berhasil! Akun terhubung."
+7. Website cek ulang -> POST /v1/identity/resolve {provider:"email", ...} -> dapat public_id
+8. Website tampilkan saldo
+```
+
 ---
 
 ## 7. Top-up QRIS lewat PayPan
@@ -362,4 +475,5 @@ curl -s -X POST http://127.0.0.1:8080/v1/holds/<HOLD_ID>/release \
 | Rekonsiliasi otomatis | belum (tombol sync manual ada) |
 | ID pelanggan pendek (public_id) | selesai |
 | Cek saldo & top-up lewat ID publik | selesai |
-| Identity Telegram/WhatsApp | schema ada, endpoint belum |
+| Identitas Telegram (primer, auto-daftar) | selesai |
+| Ikat email/WhatsApp lewat kode Telegram | selesai |

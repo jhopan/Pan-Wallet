@@ -72,16 +72,17 @@ type WalletStore interface {
 // Deps mengumpulkan dependency server. Field nil berarti fitur terkait belum
 // aktif dan endpoint-nya menjawab 503 dengan pesan jelas.
 type Deps struct {
-	Auth      ProductAuthenticator
-	Holds     HoldStore
-	Overview  OverviewStore
-	Topups    TopupStore
-	Settings  SettingsStore
-	Admin     *AdminAuth
-	Ledger    LedgerStore
-	Keys      KeyStore
-	Wallets   WalletStore
-	PublicIDs PublicIDStore
+	Auth       ProductAuthenticator
+	Holds      HoldStore
+	Overview   OverviewStore
+	Topups     TopupStore
+	Settings   SettingsStore
+	Admin      *AdminAuth
+	Ledger     LedgerStore
+	Keys       KeyStore
+	Wallets    WalletStore
+	PublicIDs  PublicIDStore
+	Identities IdentityStore
 }
 
 type Server struct {
@@ -107,6 +108,10 @@ func (server *Server) routes() {
 	mux.HandleFunc("GET /healthz", health)
 	mux.HandleFunc("GET /pay/{id}", server.checkout)
 	mux.HandleFunc("GET /api/topup/{id}", server.topupStatus)
+	mux.HandleFunc("POST /v1/identity/resolve", server.identityResolve)
+	mux.HandleFunc("POST /v1/identity/link/start", server.identityLinkStart)
+	mux.HandleFunc("POST /v1/identity/link/confirm", server.identityLinkConfirm)
+	mux.HandleFunc("GET /v1/public/{id}/identities", server.identityList)
 	mux.HandleFunc("GET /v1/public/{id}", server.publicWallet)
 	mux.HandleFunc("POST /v1/public/{id}/topup", server.publicTopup)
 	mux.HandleFunc("POST /webhook/paypan", server.paypanWebhook)

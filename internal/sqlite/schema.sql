@@ -21,6 +21,17 @@ create table if not exists identity_links (
   unique (provider, external_id)
 );
 
+-- Kode sementara untuk mengikat channel baru (email/WA) ke wallet Telegram.
+-- Pelanggan memasukkan kode ini di bot Telegram untuk konfirmasi.
+create table if not exists identity_link_codes (
+  code text primary key,
+  provider text not null check (provider in ('telegram','whatsapp','email','web')),
+  external_id text not null,
+  expires_at integer not null,
+  used_at integer,
+  created_at integer not null
+);
+
 create table if not exists wallets (
   id text primary key,
   wallet_user_id text not null unique references wallet_users(id) on delete cascade,
