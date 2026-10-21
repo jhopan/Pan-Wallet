@@ -118,3 +118,19 @@ func statusLabel(status string) string {
 }
 
 var _ = topup.MinPrice
+
+// statusLabelID menerjemahkan status invoice untuk tampilan panel.
+func statusLabelID(status string) string {
+	switch status {
+	case "paid":
+		return "lunas"
+	case "pending":
+		return "tertunda"
+	case "expired":
+		return "kedaluwarsa"
+	case "cancelled":
+		return "dibatalkan"
+	default:
+		return status
+	}
+}

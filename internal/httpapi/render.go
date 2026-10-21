@@ -6,8 +6,7 @@ import (
 	"strings"
 )
 
-// Renderer menyatukan template panel kendali dan halaman checkout. Satu tempat
-// supaya semua halaman memakai layout dan format rupiah yang sama.
+// Renderer menyatukan template panel kendali dan halaman checkout.
 type Renderer struct {
 	pages map[string]*template.Template
 }
@@ -52,6 +51,7 @@ type Money int64
 
 func (money Money) String() string { return Rupiah(int64(money)) }
 
+// Layout mengikuti gaya PayPan: sidebar gelap, aksen hijau, kartu putih.
 const layoutHTML = `<!doctype html>
 <html lang="id">
 <head>
@@ -59,210 +59,145 @@ const layoutHTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}} - Pan-Wallet</title>
 <style>
-  :root { --ink:#141414; --muted:#6b6b6b; --line:#e4e4e4; --accent:#0f766e; --bg:#f7f7f6; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); }
-  a { color:var(--accent); text-decoration:none; }
-  a:hover { text-decoration:underline; }
-  .shell { display:flex; min-height:100vh; }
-  nav { width:210px; background:#fff; border-right:1px solid var(--line); padding:20px 0; flex-shrink:0; }
-  nav .brand { padding:0 20px 16px; font-weight:700; font-size:17px; letter-spacing:-0.01em; }
-  nav .brand small { display:block; font-weight:400; color:var(--muted); font-size:11px; margin-top:2px; }
-  nav a { display:block; padding:10px 20px; color:var(--ink); font-size:14px; border-left:3px solid transparent; }
-  nav a.active { background:#f0faf8; border-left-color:var(--accent); font-weight:600; }
-  nav a:hover { background:#f6f6f6; text-decoration:none; }
-  main { flex:1; padding:28px 32px; max-width:1080px; }
-  h1 { font-size:21px; margin:0 0 4px; letter-spacing:-0.01em; }
-  .sub { color:var(--muted); font-size:13px; margin:0 0 24px; }
-  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:20px; }
-  .card h2 { font-size:15px; margin:0 0 14px; }
-  table { width:100%; border-collapse:collapse; }
-  th,td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; }
-  th { color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; }
-  td.num { text-align:right; font-variant-numeric:tabular-nums; }
-  td.id { font-family:ui-monospace,monospace; font-size:11px; color:var(--muted); }
-  tr:last-child td { border-bottom:none; }
-  .stats { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:22px; }
-  .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 18px; min-width:140px; }
-  .stat span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
-  .stat strong { font-size:22px; font-variant-numeric:tabular-nums; }
-  label { display:block; font-size:13px; margin-bottom:5px; color:var(--ink); }
-  input,textarea,select { width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:14px; background:#fff; }
-  input:focus,textarea:focus,select:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
-  button { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 18px; font:inherit; font-weight:600; cursor:pointer; }
-  button:hover { background:#0c5f58; }
-  button.ghost { background:#fff; color:var(--ink); border:1px solid var(--line); }
-  button.ghost:hover { background:#f2f2f2; }
-  .row { display:flex; gap:14px; flex-wrap:wrap; }
-  .row > div { flex:1; min-width:180px; }
-  .badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:600; }
-  .b-pending { background:#fff3cd; color:#8a6d00; }
-  .b-paid { background:#d4edda; color:#186a3b; }
-  .b-expired,.b-cancelled { background:#f1f1f1; color:#666; }
-  .flash { background:#e8f5f2; border:1px solid #b8ddd6; color:#0c5f58; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:13px; }
-  .err { background:#fdeaea; border:1px solid #f3c2c2; color:#8a1c1c; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:13px; }
-  .empty { padding:26px; text-align:center; color:var(--muted); font-size:13px; }
-  footer { color:var(--muted); font-size:11px; padding:10px 0 0; }
-  @media (max-width:720px){
-    .shell{flex-direction:column}
-    nav{width:100%;border-right:none;border-bottom:1px solid var(--line);padding:12px 0;display:flex;flex-wrap:wrap}
-    nav .brand{width:100%;padding-bottom:8px}
-    nav a{border-left:none;border-bottom:3px solid transparent;padding:8px 14px}
-    nav a.active{border-left:none;border-bottom-color:var(--accent)}
-    main{padding:18px}
-  }
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f2f4f8;margin:0;color:#101828}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:230px;background:#101828;color:#cbd5e1;padding:18px 14px;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 20px;border-bottom:1px solid #1e293b;margin-bottom:14px}
+.brand .dot{width:36px;height:36px;border-radius:10px;background:#1a7f37;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0}
+.brand b{color:#fff;font-size:16px;display:block;line-height:1.1}
+.brand small{color:#64748b;font-size:11px}
+.menu a{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:#cbd5e1;text-decoration:none;font-size:14px;font-weight:500;margin-bottom:4px}
+.menu a:hover{background:#1e293b;color:#fff}
+.menu a.on{background:#1a7f37;color:#fff;font-weight:600}
+.menu .ico{width:20px;text-align:center;flex-shrink:0}
+.sidebar .foot{margin-top:auto;padding:12px 8px 0;border-top:1px solid #1e293b;font-size:12px;color:#64748b}
+.main{margin-left:230px;flex:1;min-width:0}
+header{background:#fff;border-bottom:1px solid #e4e7ec;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0;color:#101828}
+header .right{display:flex;align-items:center;gap:14px}
+header .who{font-size:13px;color:#667085}
+header a.out{color:#b42318;text-decoration:none;font-size:13px;font-weight:600;padding:7px 14px;border:1px solid #fda29b;border-radius:8px}
+header a.out:hover{background:#fee4e2}
+.content{max-width:980px;margin:24px auto;padding:0 24px}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+h2{margin:0 0 12px;font-size:16px;color:#101828}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
+th{color:#667085;font-weight:600;background:#f9fafb}
+code{background:#f2f4f8;padding:2px 6px;border-radius:6px;font-size:13px}
+input,select,textarea{padding:8px;border:1px solid #d0d5dd;border-radius:8px;margin:4px 0;font-size:14px;width:100%;font-family:inherit}
+input:focus,textarea:focus,select:focus{outline:2px solid #1a7f37;border-color:#1a7f37}
+label{font-size:13px;color:#344054;font-weight:600;display:block;margin:10px 0 2px}
+button{padding:8px 14px;background:#1a7f37;color:#fff;border:0;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+button:hover{background:#166f30}
+button.sec{background:#fff;color:#344054;border:1px solid #d0d5dd}
+button.sec:hover{background:#f9fafb}
+.badge{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.paid{background:#d4edda;color:#186a3b}
+.pending{background:#fff3cd;color:#8a6d00}
+.expired,.cancelled{background:#f8d7da;color:#8a1c1c}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.06);text-align:center}
+.stat .n{font-size:26px;font-weight:800;color:#101828;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:#667085;margin-top:2px}
+td small{color:#98a2b3;font-size:12px;white-space:nowrap}
+td.empty{text-align:center;color:#98a2b3;padding:18px}
+.money{font-variant-numeric:tabular-nums;text-align:right}
+th.money{text-align:right}
+.flash{background:#d4edda;color:#186a3b;padding:10px 14px;border-radius:8px;margin-bottom:14px}
+.err{background:#fee4e2;color:#b42318;padding:10px 14px;border-radius:8px;margin-bottom:14px}
+.pg{color:#1a7f37;text-decoration:none;font-weight:600;margin:0 6px}
+a.act{display:inline-block;padding:5px 11px;border:1px solid #d0d5dd;border-radius:7px;color:#344054;font-size:12px;font-weight:600;text-decoration:none;background:#fff}
+a.act:hover{background:#f9fafb;border-color:#98a2b3}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.row>div{flex:1;min-width:180px}
+form.inline{display:inline}
+@media(max-width:800px){.sidebar{display:none}.main{margin-left:0}.content{padding:0 14px}}
 </style>
 </head>
 <body>
-<div class="shell">
-<nav>
-  <div class="brand">Pan-Wallet<small>by JhopanStore</small></div>
-  <a href="/admin" class="{{if eq .Tab "home"}}active{{end}}">Dashboard</a>
-  <a href="/admin/topup" class="{{if eq .Tab "topup"}}active{{end}}">Top-up QRIS</a>
-  <a href="/admin/config" class="{{if eq .Tab "config"}}active{{end}}">Konfigurasi</a>
-  <a href="/" class="">Saldo</a>
-  <a href="/admin/logout">Keluar</a>
-</nav>
-<main>
+<div class="layout">
+<div class="sidebar">
+<div class="brand"><div class="dot">P</div><div><b>Pan-Wallet</b><small>by JhopanStore</small></div></div>
+<div class="menu">
+<a href="/admin" class="{{if eq .Tab "home"}}on{{end}}"><span class="ico">▤</span> Dashboard</a>
+<a href="/admin/topup" class="{{if eq .Tab "topup"}}on{{end}}"><span class="ico">▣</span> Top-up QRIS</a>
+<a href="/admin/config" class="{{if eq .Tab "config"}}on{{end}}"><span class="ico">⚙</span> Konfigurasi</a>
+</div>
+<div class="foot">v1.0 - JhopanStore</div>
+</div>
+<div class="main">
+<header><h1>{{.Title}}</h1>
+<div class="right"><span class="who">{{.User}}</span><a class="out" href="/admin/logout">Keluar</a></div></header>
+<div class="content">
 {{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
 {{if .Error}}<div class="err">{{.Error}}</div>{{end}}
 `
 
 const homeHTML = `
-<h1>Dashboard</h1>
-<p class="sub">Ringkasan saldo dan invoice top-up.</p>
-<section class="stats">
-  <div class="stat"><span>Wallet</span><strong>{{.Overview.WalletCount}}</strong></div>
-  <div class="stat"><span>Hold</span><strong>{{.Overview.HoldCount}}</strong></div>
-  <div class="stat"><span>Ledger</span><strong>{{.Overview.LedgerCount}}</strong></div>
-  <div class="stat"><span>Invoice pending</span><strong>{{.PendingCount}}</strong></div>
-</section>
-<div class="card">
-  <h2>Saldo pelanggan</h2>
-  <table>
-    <thead><tr><th>Wallet User</th><th class="num">Saldo</th><th class="num">Tertahan</th><th class="num">Tersedia</th></tr></thead>
-    <tbody>
-    {{range .Wallets}}
-      <tr><td class="id">{{.WalletUserID}}</td><td class="num">{{.Balance}}</td><td class="num">{{.HeldActive}}</td><td class="num">{{.Available}}</td></tr>
-    {{else}}
-      <tr><td colspan="4" class="empty">Belum ada wallet.</td></tr>
-    {{end}}
-    </tbody>
-  </table>
+<div class="stats">
+  <div class="stat"><div class="n">{{.Overview.WalletCount}}</div><div class="l">Dompet</div></div>
+  <div class="stat"><div class="n">{{.Overview.HoldCount}}</div><div class="l">Dana tertahan</div></div>
+  <div class="stat"><div class="n">{{.Overview.LedgerCount}}</div><div class="l">Mutasi</div></div>
+  <div class="stat"><div class="n">{{.PendingCount}}</div><div class="l">Invoice tertunda</div></div>
 </div>
-<div class="card">
-  <h2>Invoice top-up terbaru</h2>
-  <table>
-    <thead><tr><th>Dibuat</th><th>Status</th><th class="num">Nominal</th><th class="num">Total</th><th></th></tr></thead>
-    <tbody>
-    {{range .Invoices}}
-      <tr>
-        <td>{{.CreatedAt}}</td>
-        <td><span class="badge b-{{.Status}}">{{.Status}}</span></td>
-        <td class="num">{{.Price}}</td>
-        <td class="num">{{.Total}}</td>
-        <td><a href="/pay/{{.ID}}">checkout</a></td>
-      </tr>
-    {{else}}
-      <tr><td colspan="5" class="empty">Belum ada invoice top-up.</td></tr>
-    {{end}}
-    </tbody>
-  </table>
-</div>
-<footer>Pan-Wallet &middot; by JhopanStore</footer>
-</main>
-</div>
-</body>
-</html>
+<div class="card"><h2>Saldo pelanggan</h2><table>
+<tr><th>Wallet User</th><th class="money">Saldo</th><th class="money">Tertahan</th><th class="money">Tersedia</th></tr>
+{{range .Wallets}}<tr><td><code>{{.WalletUserID}}</code></td><td class="money">{{.Balance}}</td><td class="money">{{.HeldActive}}</td><td class="money"><b>{{.Available}}</b></td></tr>
+{{else}}<tr><td colspan="4" class="empty">Belum ada wallet</td></tr>{{end}}
+</table></div>
+<div class="card"><h2>Invoice top-up terbaru</h2><table>
+<tr><th>Dibuat</th><th>Status</th><th class="money">Nominal</th><th class="money">Total</th><th>Aksi</th></tr>
+{{range .Invoices}}<tr><td><small>{{.CreatedAt}}</small></td><td><span class="badge {{.Status}}">{{.StatusLabel}}</span></td><td class="money">{{.Price}}</td><td class="money"><b>{{.Total}}</b></td><td>{{if eq .Status "pending"}}<a class="act" href="/pay/{{.ID}}">checkout</a>{{else}}<small>-</small>{{end}}</td></tr>
+{{else}}<tr><td colspan="5" class="empty">Belum ada invoice</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
 `
 
 const topupHTML = `
-<h1>Top-up QRIS</h1>
-<p class="sub">Buat invoice top-up bernominal unik, lalu kirim link checkout ke pelanggan.</p>
-<div class="card">
-  <h2>Buat invoice</h2>
-  <form method="post" action="/admin/topup">
-    <div class="row">
-      <div>
-        <label for="wallet_user_id">Wallet User ID</label>
-        <input id="wallet_user_id" name="wallet_user_id" required placeholder="uuid wallet user">
-      </div>
-      <div>
-        <label for="price">Nominal top-up (Rp)</label>
-        <input id="price" name="price" type="number" min="1000" step="1" required placeholder="25000">
-      </div>
-      <div style="flex:0;align-self:flex-end"><button type="submit">Buat</button></div>
-    </div>
-  </form>
+<div class="card"><h2>Buat invoice top-up</h2>
+<form method="post" action="/admin/topup">
+<div class="row">
+<div><label for="wallet_user_id">Wallet User ID</label><input id="wallet_user_id" name="wallet_user_id" required placeholder="id wallet user"></div>
+<div><label for="price">Nominal top-up (Rp)</label><input id="price" name="price" type="number" min="1000" step="1" required placeholder="25000"></div>
+<div style="flex:0;align-self:flex-end"><button type="submit">Buat invoice</button></div>
 </div>
-<div class="card">
-  <h2>Invoice</h2>
-  <table>
-    <thead><tr><th>Dibuat</th><th>Wallet</th><th>Status</th><th class="num">Nominal</th><th class="num">Kode</th><th class="num">Total</th><th>Aksi</th></tr></thead>
-    <tbody>
-    {{range .Invoices}}
-      <tr>
-        <td>{{.CreatedAt}}</td>
-        <td class="id">{{.WalletUserID}}</td>
-        <td><span class="badge b-{{.Status}}">{{.Status}}</span></td>
-        <td class="num">{{.Price}}</td>
-        <td class="num">{{.Code}}</td>
-        <td class="num">{{.Total}}</td>
-        <td>
-          <a href="/pay/{{.ID}}">checkout</a>
-          {{if eq .Status "pending"}}
-          <form method="post" action="/admin/topup/{{.ID}}/paid" style="display:inline">
-            <button class="ghost" type="submit" title="Tandai lunas manual">lunas</button>
-          </form>
-          {{end}}
-        </td>
-      </tr>
-    {{else}}
-      <tr><td colspan="7" class="empty">Belum ada invoice.</td></tr>
-    {{end}}
-    </tbody>
-  </table>
-</div>
-<footer>Pan-Wallet &middot; by JhopanStore</footer>
-</main>
-</div>
-</body>
-</html>
+</form></div>
+<div class="card"><h2>Daftar invoice</h2><table>
+<tr><th>Dibuat</th><th>Wallet</th><th>Status</th><th class="money">Nominal</th><th class="money">Kode</th><th class="money">Total</th><th>Aksi</th></tr>
+{{range .Invoices}}<tr>
+<td><small>{{.CreatedAt}}</small></td>
+<td><code>{{.WalletUserID}}</code></td>
+<td><span class="badge {{.Status}}">{{.StatusLabel}}</span></td>
+<td class="money">{{.Price}}</td>
+<td class="money">{{.Code}}</td>
+<td class="money"><b>{{.Total}}</b></td>
+<td><a class="act" href="/pay/{{.ID}}">checkout</a>
+{{if eq .Status "pending"}}<form class="inline" method="post" action="/admin/topup/{{.ID}}/paid"><button class="sec" type="submit">lunas</button></form>{{end}}</td>
+</tr>
+{{else}}<tr><td colspan="7" class="empty">Belum ada invoice</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
 `
 
 const configHTML = `
-<h1>Konfigurasi</h1>
-<p class="sub">Payload QRIS statis merchant dan pengaturan gateway.</p>
-<div class="card">
-  <h2>QRIS</h2>
-  <form method="post" action="/admin/config">
-    <label for="qris_base">Payload QRIS statis</label>
-    <textarea id="qris_base" name="qris_base" rows="4" placeholder="000201010211...5802ID...6304XXXX">{{.QrisBase}}</textarea>
-    <p class="sub" style="margin:8px 0 14px">Tempel payload QRIS statis dari aplikasi merchant. Nominal diisi otomatis per invoice.</p>
-    <div class="row">
-      <div>
-        <label for="invoice_ttl_minutes">Masa berlaku invoice (menit)</label>
-        <input id="invoice_ttl_minutes" name="invoice_ttl_minutes" type="number" min="1" max="120" value="{{.TTLMinutes}}">
-      </div>
-      <div style="flex:0;align-self:flex-end"><button type="submit">Simpan</button></div>
-    </div>
-  </form>
+<div class="card"><h2>QRIS</h2>
+<form method="post" action="/admin/config">
+<label for="qris_base">Payload QRIS statis</label>
+<textarea id="qris_base" name="qris_base" rows="4" placeholder="000201010211...5802ID...6304XXXX">{{.QrisBase}}</textarea>
+<small style="color:#667085">Tempel payload QRIS statis dari aplikasi merchant. Nominal diisi otomatis per invoice.</small>
+<div class="row" style="margin-top:14px">
+<div><label for="invoice_ttl_minutes">Masa berlaku invoice (menit)</label><input id="invoice_ttl_minutes" name="invoice_ttl_minutes" type="number" min="1" max="120" value="{{.TTLMinutes}}"></div>
+<div style="flex:0;align-self:flex-end"><button type="submit">Simpan</button></div>
 </div>
-<div class="card">
-  <h2>Info</h2>
-  <table>
-    <tbody>
-      <tr><th>Status QRIS</th><td>{{.QrisStatus}}</td></tr>
-      <tr><th>Engine database</th><td>{{.Engine}}</td></tr>
-      <tr><th>Jumlah migrasi</th><td>{{.Migrations}}</td></tr>
-    </tbody>
-  </table>
-</div>
-<footer>Pan-Wallet &middot; by JhopanStore</footer>
-</main>
-</div>
-</body>
-</html>
+</form></div>
+<div class="card"><h2>Info sistem</h2><table>
+<tr><th>Status QRIS</th><td>{{.QrisStatus}}</td></tr>
+<tr><th>Engine database</th><td>{{.Engine}}</td></tr>
+<tr><th>Jumlah migrasi</th><td>{{.Migrations}}</td></tr>
+</table></div>
+</div></div></div></body></html>
 `
 
 const loginHTML = `<!doctype html>
@@ -270,33 +205,33 @@ const loginHTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Masuk - Pan-Wallet</title>
+<title>Login - Pan-Wallet</title>
 <style>
-  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:#f7f7f6; color:#141414; display:flex; min-height:100vh; align-items:center; justify-content:center; }
-  .card { background:#fff; border:1px solid #e4e4e4; border-radius:14px; padding:28px 30px; width:100%; max-width:360px; }
-  h1 { font-size:19px; margin:0 0 4px; }
-  p.sub { color:#6b6b6b; font-size:13px; margin:0 0 22px; }
-  label { display:block; font-size:13px; margin-bottom:5px; }
-  input { width:100%; padding:10px 12px; border:1px solid #e4e4e4; border-radius:8px; font:inherit; margin-bottom:14px; }
-  input:focus { outline:2px solid #0f766e; outline-offset:1px; }
-  button { width:100%; background:#0f766e; color:#fff; border:none; border-radius:8px; padding:11px; font:inherit; font-weight:600; cursor:pointer; }
-  button:hover { background:#0c5f58; }
-  .err { background:#fdeaea; border:1px solid #f3c2c2; color:#8a1c1c; padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:13px; }
-  footer { color:#6b6b6b; font-size:11px; margin-top:18px; text-align:center; }
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f2f4f8;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
+.c{background:#fff;padding:36px;border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.09);width:340px}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.logo .dot{width:38px;height:38px;border-radius:10px;background:#101828;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.logo b{font-size:19px} .logo small{display:block;color:#667085;font-size:12px}
+label{font-size:13px;color:#344054;font-weight:600;display:block;margin:10px 0 4px}
+input{width:100%;box-sizing:border-box;padding:10px;margin:0 0 4px;border:1px solid #d0d5dd;border-radius:8px;font-size:14px}
+input:focus{outline:2px solid #1a7f37;border-color:#1a7f37}
+button{width:100%;padding:11px;background:#1a7f37;color:#fff;border:0;border-radius:8px;font-weight:600;cursor:pointer;margin-top:14px;font-size:15px}
+button:hover{background:#166f30}
+.e{color:#b42318;font-size:14px;background:#fee4e2;padding:8px 12px;border-radius:8px;margin-bottom:10px}
+.hint{color:#667085;font-size:12px;margin-top:14px;text-align:center}
 </style>
 </head>
 <body>
-<form class="card" method="post" action="/admin/login">
-  <h1>Pan-Wallet</h1>
-  <p class="sub">Panel kendali wallet dan gateway QRIS</p>
-  {{if .Error}}<div class="err">{{.Error}}</div>{{end}}
-  <label for="username">Username</label>
-  <input id="username" name="username" autocomplete="username" required>
-  <label for="password">Password</label>
-  <input id="password" name="password" type="password" autocomplete="current-password" required>
-  <button type="submit">Masuk</button>
-  <footer>by JhopanStore</footer>
+<div class="c">
+<div class="logo"><div class="dot">P</div><div><b>Pan-Wallet</b><small>by JhopanStore</small></div></div>
+{{if .Error}}<p class="e">{{.Error}}</p>{{end}}
+<form method="post" action="/admin/login">
+<label for="username">Username</label><input id="username" type="text" name="username" placeholder="username" autofocus autocomplete="username">
+<label for="password">Password</label><input id="password" type="password" name="password" placeholder="password" autocomplete="current-password">
+<button>Login</button>
 </form>
+<div class="hint">@Jhopanstore</div>
+</div>
 </body>
 </html>
 `
@@ -308,29 +243,29 @@ const checkoutHTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pembayaran QRIS</title>
 <style>
-  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:#f6f7f9; display:flex; justify-content:center; padding:24px; }
-  .card { background:#fff; border-radius:16px; max-width:380px; width:100%; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.08); text-align:center; }
-  h1 { font-size:18px; margin:0 0 4px; }
-  .amount { font-size:32px; font-weight:700; margin:8px 0; font-variant-numeric:tabular-nums; }
-  .qr { width:260px; height:260px; margin:12px auto; border:1px solid #eee; border-radius:12px; padding:8px; }
-  .badge { display:inline-block; padding:6px 14px; border-radius:999px; font-weight:600; font-size:14px; }
-  .pending { background:#fff3cd; color:#8a6d00; }
-  .paid { background:#d4edda; color:#186a3b; }
-  .expired,.cancelled { background:#f8d7da; color:#8a1c1c; }
-  small { color:#888; }
-  .paid .qr,.expired .qr,.cancelled .qr { filter:grayscale(1); opacity:.5; }
-  footer { margin-top:16px; font-size:11px; color:#98a2b3; }
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f2f4f8;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:24px}
+.card{background:#fff;border-radius:16px;max-width:380px;width:100%;padding:24px;box-shadow:0 2px 16px rgba(0,0,0,.09);text-align:center}
+h1{font-size:18px;margin:0 0 4px;color:#101828}
+.amount{font-size:32px;font-weight:800;margin:8px 0;font-variant-numeric:tabular-nums;color:#101828}
+.qr{width:260px;height:260px;margin:12px auto;border:1px solid #eee;border-radius:12px;padding:8px}
+.badge{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:600;font-size:14px}
+.pending{background:#fff3cd;color:#8a6d00}
+.paid{background:#d4edda;color:#186a3b}
+.expired,.cancelled{background:#f8d7da;color:#8a1c1c}
+small{color:#667085}
+.paid .qr,.expired .qr,.cancelled .qr{filter:grayscale(1);opacity:.5}
+footer{margin-top:16px;font-size:11px;color:#98a2b3}
 </style>
 </head>
 <body>
 <div class="card {{.Status}}">
-  <h1>Pembayaran QRIS</h1>
-  <div class="amount">Rp {{.Total}}</div>
-  <span class="badge {{.Status}}" id="badge">{{.StatusLabel}}</span>
-  <div><img class="qr" id="qr" src="/pay/{{.ID}}/qr.png" alt="QRIS" {{if not .ShowQR}}style="display:none"{{end}}></div>
-  {{if .ShowQR}}<small>Scan dengan aplikasi e-wallet atau m-banking.<br>Halaman ini memperbarui otomatis.</small>
-  {{else}}<small>QR tidak tersedia untuk invoice ini.</small>{{end}}
-  <footer>Powered by <b>JhopanStore</b></footer>
+<h1>Pembayaran QRIS</h1>
+<div class="amount">Rp {{.Total}}</div>
+<span class="badge {{.Status}}" id="badge">{{.StatusLabel}}</span>
+<div><img class="qr" id="qr" src="/pay/{{.ID}}/qr.png" alt="QRIS" {{if not .ShowQR}}style="display:none"{{end}}></div>
+{{if .ShowQR}}<small>Scan dengan aplikasi e-wallet atau m-banking.<br>Halaman ini memperbarui otomatis.</small>
+{{else}}<small>QR tidak tersedia untuk invoice ini.</small>{{end}}
+<footer>Powered by <b>JhopanStore</b></footer>
 </div>
 <script>
 (function poll(){

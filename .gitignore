@@ -24,3 +24,6 @@ dashboard-preview.html
 .local-demo-token
 qr-demo.png
 preview-404.html
+preview-*.html
+shot-*.png
+.chrome-tmp/

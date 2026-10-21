@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+// adminUser mengembalikan nama admin untuk ditampilkan di header panel.
+func (server *Server) adminUser() string {
+	if server.deps.Admin == nil {
+		return ""
+	}
+	return server.deps.Admin.Username()
+}
+
 // adminRow adalah bentuk invoice untuk ditampilkan di panel.
 type adminRow struct {
 	ID           string
@@ -15,6 +23,7 @@ type adminRow struct {
 	Code         int
 	Total        Money
 	Status       string
+	StatusLabel  string
 	CreatedAt    string
 }
 
@@ -56,6 +65,7 @@ func (server *Server) adminHome(response http.ResponseWriter, request *http.Requ
 		"Invoices":     invoices,
 		"PendingCount": pending,
 		"Flash":        request.URL.Query().Get("ok"),
+		"User":         server.adminUser(),
 	}
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.renderer.Render("home", response, data)
@@ -69,6 +79,7 @@ func (server *Server) adminTopup(response http.ResponseWriter, request *http.Req
 		"Invoices": invoices,
 		"Flash":    request.URL.Query().Get("ok"),
 		"Error":    request.URL.Query().Get("err"),
+		"User":     server.adminUser(),
 	}
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.renderer.Render("topup", response, data)
@@ -140,6 +151,7 @@ func (server *Server) adminConfig(response http.ResponseWriter, request *http.Re
 		"Migrations": len(migrationsNames()),
 		"Flash":      request.URL.Query().Get("ok"),
 		"Error":      request.URL.Query().Get("err"),
+		"User":       server.adminUser(),
 	}
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	server.renderer.Render("config", response, data)
@@ -208,6 +220,7 @@ func (server *Server) recentInvoices(request *http.Request, limit int) ([]adminR
 			Code:         invoice.Code,
 			Total:        Money(invoice.Total),
 			Status:       invoice.Status,
+			StatusLabel:  statusLabelID(invoice.Status),
 			CreatedAt:    invoice.ExpiresAt.Format("02 Jan 15:04"),
 		})
 	}
