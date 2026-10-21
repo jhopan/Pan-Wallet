@@ -11,6 +11,7 @@ import (
 // WalletRow adalah satu baris daftar wallet untuk panel.
 type WalletRow struct {
 	WalletUserID string
+	PublicID     string
 	Status       string
 	Balance      int64
 	HeldActive   int64
@@ -25,7 +26,7 @@ func (store *Store) ListWallets(ctx context.Context, limit int) ([]WalletRow, er
 		limit = 100
 	}
 	rows, err := store.db.QueryContext(ctx, `
-		select u.id, u.status, w.balance, w.currency, u.created_at,
+		select u.id, u.public_id, u.status, w.balance, w.currency, u.created_at,
 		       coalesce((select sum(h.amount) from wallet_holds h where h.wallet_id = w.id and h.status = 'active'), 0)
 		from wallet_users u join wallets w on w.wallet_user_id = u.id
 		order by u.created_at desc, u.rowid desc limit ?`, limit)
@@ -38,7 +39,7 @@ func (store *Store) ListWallets(ctx context.Context, limit int) ([]WalletRow, er
 	for rows.Next() {
 		var row WalletRow
 		var createdAt int64
-		if err := rows.Scan(&row.WalletUserID, &row.Status, &row.Balance, &row.Currency, &createdAt, &row.HeldActive); err != nil {
+		if err := rows.Scan(&row.WalletUserID, &row.PublicID, &row.Status, &row.Balance, &row.Currency, &createdAt, &row.HeldActive); err != nil {
 			return nil, fmt.Errorf("baca wallet: %w", err)
 		}
 		row.Available = row.Balance - row.HeldActive

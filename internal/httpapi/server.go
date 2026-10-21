@@ -72,15 +72,16 @@ type WalletStore interface {
 // Deps mengumpulkan dependency server. Field nil berarti fitur terkait belum
 // aktif dan endpoint-nya menjawab 503 dengan pesan jelas.
 type Deps struct {
-	Auth     ProductAuthenticator
-	Holds    HoldStore
-	Overview OverviewStore
-	Topups   TopupStore
-	Settings SettingsStore
-	Admin    *AdminAuth
-	Ledger   LedgerStore
-	Keys     KeyStore
-	Wallets  WalletStore
+	Auth      ProductAuthenticator
+	Holds     HoldStore
+	Overview  OverviewStore
+	Topups    TopupStore
+	Settings  SettingsStore
+	Admin     *AdminAuth
+	Ledger    LedgerStore
+	Keys      KeyStore
+	Wallets   WalletStore
+	PublicIDs PublicIDStore
 }
 
 type Server struct {
@@ -106,6 +107,8 @@ func (server *Server) routes() {
 	mux.HandleFunc("GET /healthz", health)
 	mux.HandleFunc("GET /pay/{id}", server.checkout)
 	mux.HandleFunc("GET /api/topup/{id}", server.topupStatus)
+	mux.HandleFunc("GET /v1/public/{id}", server.publicWallet)
+	mux.HandleFunc("POST /v1/public/{id}/topup", server.publicTopup)
 	mux.HandleFunc("POST /webhook/paypan", server.paypanWebhook)
 	mux.HandleFunc("GET /admin/login", server.loginPage)
 	mux.HandleFunc("POST /admin/login", server.loginSubmit)
@@ -212,4 +215,11 @@ func writeJSON(response http.ResponseWriter, status int, payload any) {
 
 func writeError(response http.ResponseWriter, status int, message string) {
 	writeJSON(response, status, map[string]string{"error": message})
+}
+
+// decodeJSON membaca body JSON dengan batas 1 MiB dan menolak field asing.
+func decodeJSON(response http.ResponseWriter, request *http.Request, target any) error {
+	decoder := json.NewDecoder(http.MaxBytesReader(response, request.Body, 1<<20))
+	decoder.DisallowUnknownFields()
+	return decoder.Decode(target)
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jhopan/Pan-Wallet/internal/report"
@@ -28,29 +29,44 @@ func (store *Store) CreateWalletUser(ctx context.Context, balance int64) (string
 	if balance < 0 {
 		return "", fmt.Errorf("saldo awal tidak boleh negatif")
 	}
-	userID := newID()
-	walletID := newID()
-	now := time.Now().Unix()
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", fmt.Errorf("mulai transaksi: %w", err)
-	}
-	defer tx.Rollback()
+	for attempt := 0; attempt < 10; attempt++ {
+		publicID, err := generatePublicID()
+		if err != nil {
+			return "", err
+		}
 
-	if _, err := tx.ExecContext(ctx,
-		`insert into wallet_users (id, status, created_at) values (?, 'active', ?)`, userID, now); err != nil {
-		return "", fmt.Errorf("buat wallet user: %w", err)
+		userID := newID()
+		walletID := newID()
+		now := time.Now().Unix()
+
+		tx, err := store.db.BeginTx(ctx, nil)
+		if err != nil {
+			return "", fmt.Errorf("mulai transaksi: %w", err)
+		}
+
+		if _, err := tx.ExecContext(ctx,
+			`insert into wallet_users (id, public_id, status, created_at) values (?, ?, 'active', ?)`,
+			userID, publicID, now); err != nil {
+			tx.Rollback()
+			// public_id bentrok (sangat jarang): coba lagi.
+			if strings.Contains(err.Error(), "UNIQUE") {
+				continue
+			}
+			return "", fmt.Errorf("buat wallet user: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx,
+			`insert into wallets (id, wallet_user_id, balance, currency, updated_at) values (?, ?, ?, 'IDR', ?)`,
+			walletID, userID, balance, now); err != nil {
+			tx.Rollback()
+			return "", fmt.Errorf("buat wallet: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			return "", fmt.Errorf("simpan wallet user: %w", err)
+		}
+		return userID, nil
 	}
-	if _, err := tx.ExecContext(ctx,
-		`insert into wallets (id, wallet_user_id, balance, currency, updated_at) values (?, ?, ?, 'IDR', ?)`,
-		walletID, userID, balance, now); err != nil {
-		return "", fmt.Errorf("buat wallet: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return "", fmt.Errorf("simpan wallet user: %w", err)
-	}
-	return userID, nil
+	return "", fmt.Errorf("gagal membuat public id unik setelah 10 percobaan")
 }
 
 // CreateHold mengunci saldo tersedia untuk satu order produk.

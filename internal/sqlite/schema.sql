@@ -2,8 +2,11 @@
 -- Padanan PostgreSQL, tanpa uuid/jsonb/timestamptz: id TEXT (hex acak),
 -- waktu INTEGER unix, metadata JSON disimpan sebagai TEXT.
 
+-- public_id: ID pendek 8 huruf besar yang dipakai pelanggan di semua channel
+-- (Telegram, WhatsApp, web). Unik dan mudah dibaca/disalin.
 create table if not exists wallet_users (
   id text primary key,
+  public_id text not null unique,
   status text not null default 'active' check (status in ('active','blocked')),
   created_at integer not null
 );

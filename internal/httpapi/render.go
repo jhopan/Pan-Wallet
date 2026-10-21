@@ -356,10 +356,10 @@ const walletsHTML = `
 <small style="color:#667085;display:block;margin-top:10px">ID wallet dibuat otomatis. Saldo awal boleh 0, nanti diisi lewat top-up QRIS.</small>
 </div>
 <div class="card"><h2>Daftar wallet</h2><table>
-<tr><th>Dibuat</th><th>Wallet User ID</th><th>Status</th><th class="money">Saldo</th><th class="money">Tertahan</th><th class="money">Tersedia</th><th>Aksi</th></tr>
+<tr><th>Dibuat</th><th>ID Pelanggan</th><th>Status</th><th class="money">Saldo</th><th class="money">Tertahan</th><th class="money">Tersedia</th><th>Aksi</th></tr>
 {{range .Wallets}}<tr>
 <td><small>{{.CreatedAt}}</small></td>
-<td><code>{{.WalletUserID}}</code></td>
+<td><b style="font-size:15px;letter-spacing:0.05em">{{.PublicID}}</b></td>
 <td><span class="badge {{.StatusClass}}">{{.StatusLabel}}</span></td>
 <td class="money">{{.Balance}}</td>
 <td class="money">{{.HeldActive}}</td>

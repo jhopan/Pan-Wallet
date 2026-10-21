@@ -179,6 +179,70 @@ Authorization: Bearer <api-key>
 }
 ```
 
+
+---
+
+## 6b. ID Pelanggan (dipakai semua bot)
+
+Setiap wallet punya **ID pendek 8 karakter** yang dipakai pelanggan di channel mana pun:
+
+```
+JZXJFADE
+WN4H3E5T
+```
+
+- Tanpa huruf ambigu (`0/O`, `1/I/L`) supaya tidak salah ketik di chat.
+- Unik, huruf besar, tapi terima input huruf kecil juga.
+- **Satu ID untuk semua channel**: Telegram, WhatsApp, web, bot apa pun.
+
+Bot tidak perlu menyimpan UUID internal. Cukup simpan `public_id` milik pelanggan.
+
+### `GET /v1/public/{id}` — cek saldo tanpa auth
+
+```bash
+curl -s https://wallet.domain/v1/public/JZXJFADE
+```
+
+```json
+{
+  "public_id": "JZXJFADE",
+  "balance": 150000,
+  "held": 0,
+  "available": 150000,
+  "currency": "IDR",
+  "status": "active"
+}
+```
+
+`404` bila ID tidak ada. `status` bernilai `active` atau `blocked`.
+
+Catatan keamanan: endpoint ini tanpa auth karena ID itu sendiri adalah rahasia
+(8 karakter acak dari 31 huruf = ±39 bit). Jangan pernah menampilkan daftar ID
+publik. Kalau butuh proteksi lebih, tambahkan rate limit per IP.
+
+### `POST /v1/public/{id}/topup` — buat invoice top-up
+
+```bash
+curl -s -X POST https://wallet.domain/v1/public/WN4H3E5T/topup \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 50000}'
+```
+
+```json
+{
+  "invoice_id": "8c451a1ee6af02fdf426c35f2702877b",
+  "total": 50002,
+  "status": "pending",
+  "pay_url": "/pay/cdca10f00e000623",
+  "expires_at": 1792551559
+}
+```
+
+Bot tinggal mengirim `pay_url` (gabung dengan base URL PayPan) ke pelanggan.
+Setelah pelanggan bayar, webhook PayPan menambah saldo otomatis.
+
+`403` bila wallet diblokir.
+
 ---
 
 ## 7. Top-up QRIS lewat PayPan
@@ -296,4 +360,6 @@ curl -s -X POST http://127.0.0.1:8080/v1/holds/<HOLD_ID>/release \
 | Kelola API key dari panel | selesai |
 | Riwayat mutasi di panel | selesai |
 | Rekonsiliasi otomatis | belum (tombol sync manual ada) |
+| ID pelanggan pendek (public_id) | selesai |
+| Cek saldo & top-up lewat ID publik | selesai |
 | Identity Telegram/WhatsApp | schema ada, endpoint belum |

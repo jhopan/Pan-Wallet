@@ -9,6 +9,7 @@ import (
 // WalletRowView adalah baris wallet untuk tampilan panel.
 type WalletRowView struct {
 	WalletUserID string
+	PublicID     string
 	StatusLabel  string
 	StatusClass  string
 	Balance      Money
@@ -37,6 +38,7 @@ func (server *Server) adminWallets(response http.ResponseWriter, request *http.R
 		}
 		rows = append(rows, WalletRowView{
 			WalletUserID: wallet.WalletUserID,
+			PublicID:     wallet.PublicID,
 			StatusLabel:  label,
 			StatusClass:  class,
 			Balance:      Money(wallet.Balance),
@@ -79,12 +81,11 @@ func (server *Server) adminWalletsCreate(response http.ResponseWriter, request *
 		initial = parsed
 	}
 
-	walletUserID, err := server.deps.Wallets.CreateWalletUser(request.Context(), initial)
-	if err != nil {
+	if _, err := server.deps.Wallets.CreateWalletUser(request.Context(), initial); err != nil {
 		redirectWith(response, request, "/admin/wallets", "err", err.Error())
 		return
 	}
-	redirectWith(response, request, "/admin/wallets", "ok", "Wallet dibuat: "+walletUserID)
+	redirectWith(response, request, "/admin/wallets", "ok", "Wallet dibuat.")
 }
 
 // adminWalletsStatus memblokir atau mengaktifkan kembali wallet user.

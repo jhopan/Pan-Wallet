@@ -2,8 +2,10 @@ package database
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jhopan/Pan-Wallet/internal/sqlite"
@@ -15,7 +17,7 @@ func (store *Store) ListWallets(ctx context.Context, limit int) ([]sqlite.Wallet
 		limit = 100
 	}
 	rows, err := store.pool.Query(ctx, `
-		select u.id::text, u.status, w.balance, w.currency, u.created_at,
+		select u.id::text, u.public_id, u.status, w.balance, w.currency, u.created_at,
 		       coalesce((select sum(h.amount) from wallet_holds h where h.wallet_id = w.id and h.status = 'active'), 0)
 		from wallet_users u join wallets w on w.wallet_user_id = u.id
 		order by u.created_at desc limit $1`, limit)
@@ -27,7 +29,7 @@ func (store *Store) ListWallets(ctx context.Context, limit int) ([]sqlite.Wallet
 	var wallets []sqlite.WalletRow
 	for rows.Next() {
 		var row sqlite.WalletRow
-		if err := rows.Scan(&row.WalletUserID, &row.Status, &row.Balance, &row.Currency, &row.CreatedAt, &row.HeldActive); err != nil {
+		if err := rows.Scan(&row.WalletUserID, &row.PublicID, &row.Status, &row.Balance, &row.Currency, &row.CreatedAt, &row.HeldActive); err != nil {
 			return nil, fmt.Errorf("baca wallet: %w", err)
 		}
 		row.Available = row.Balance - row.HeldActive
@@ -43,8 +45,11 @@ func (store *Store) CreateWalletUser(ctx context.Context, balance int64) (string
 	}
 	var userID string
 	err := store.pool.QueryRow(ctx, `
-		with created as (insert into wallet_users default values returning id)
-		insert into wallets (wallet_user_id, balance) select id, $1 from created returning wallet_user_id::text`, balance,
+		with created as (
+			insert into wallet_users (public_id) values ($2) returning id
+		)
+		insert into wallets (wallet_user_id, balance) select id, $1 from created returning wallet_user_id::text`,
+		balance, generatePublicID(),
 	).Scan(&userID)
 	if err != nil {
 		return "", fmt.Errorf("buat wallet user: %w", err)
@@ -80,4 +85,38 @@ func (store *Store) WalletStatus(ctx context.Context, walletUserID string) (stri
 		return "", fmt.Errorf("baca status: %w", err)
 	}
 	return status, nil
+}
+
+// generatePublicID membuat ID pendek 8 karakter tanpa huruf ambigu.
+func generatePublicID() string {
+	const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+	buffer := make([]byte, 8)
+	if _, err := rand.Read(buffer); err != nil {
+		panic(err)
+	}
+	var builder strings.Builder
+	for _, b := range buffer {
+		builder.WriteByte(alphabet[int(b)%len(alphabet)])
+	}
+	return builder.String()
+}
+
+// ResolvePublicID mencari wallet lewat public_id (case-insensitive).
+func (store *Store) ResolvePublicID(ctx context.Context, publicID string) (sqlite.WalletRow, error) {
+	normalized := strings.ToUpper(strings.TrimSpace(publicID))
+	var row sqlite.WalletRow
+	err := store.pool.QueryRow(ctx, `
+		select u.id::text, u.public_id, u.status, w.balance, w.currency, u.created_at,
+		       coalesce((select sum(h.amount) from wallet_holds h where h.wallet_id = w.id and h.status = 'active'), 0)
+		from wallet_users u join wallets w on w.wallet_user_id = u.id
+		where u.public_id = $1`, normalized,
+	).Scan(&row.WalletUserID, &row.PublicID, &row.Status, &row.Balance, &row.Currency, &row.CreatedAt, &row.HeldActive)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return sqlite.WalletRow{}, ErrInvoiceNotFound
+	}
+	if err != nil {
+		return sqlite.WalletRow{}, fmt.Errorf("cari public id: %w", err)
+	}
+	row.Available = row.Balance - row.HeldActive
+	return row, nil
 }

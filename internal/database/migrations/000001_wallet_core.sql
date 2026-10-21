@@ -2,6 +2,7 @@
 
 create table if not exists wallet_users (
   id uuid primary key default gen_random_uuid(),
+  public_id text not null unique,
   status text not null default 'active' check (status in ('active', 'blocked')),
   created_at timestamptz not null default now()
 );
