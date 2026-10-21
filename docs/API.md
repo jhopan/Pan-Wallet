@@ -237,6 +237,8 @@ Signature salah -> `403`. Webhook dobel -> saldo tetap (idempoten).
 | `/admin/login` | Login panel |
 | `/admin` | Dashboard: saldo, hold, ledger, invoice |
 | `/admin/topup` | Buat invoice top-up, sync status, tandai lunas |
+| `/admin/ledger` | Riwayat mutasi saldo per wallet |
+| `/admin/keys` | Buat / rotasi / nonaktifkan API key produk |
 | `/admin/config` | Konfigurasi PayPan |
 
 ---
@@ -290,7 +292,7 @@ curl -s -X POST http://127.0.0.1:8080/v1/holds/<HOLD_ID>/release \
 | `GET /v1/wallets/{id}` | selesai |
 | Top-up via PayPan + webhook | selesai |
 | Panel admin (dashboard, topup, config) | selesai |
-| Kelola API key dari panel | belum |
-| Riwayat mutasi di panel | belum |
+| Kelola API key dari panel | selesai |
+| Riwayat mutasi di panel | selesai |
 | Rekonsiliasi otomatis | belum (tombol sync manual ada) |
 | Identity Telegram/WhatsApp | schema ada, endpoint belum |

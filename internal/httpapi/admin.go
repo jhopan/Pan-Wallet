@@ -232,3 +232,6 @@ func (server *Server) recentInvoices(request *http.Request, limit int) ([]adminR
 func redirectWith(response http.ResponseWriter, request *http.Request, path, key, message string) {
 	http.Redirect(response, request, path+"?"+key+"="+url.QueryEscape(message), http.StatusFound)
 }
+
+// urlQueryEscape dipakai untuk menyusun pesan flash di URL.
+func urlQueryEscape(value string) string { return url.QueryEscape(value) }

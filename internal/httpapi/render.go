@@ -17,6 +17,8 @@ func NewRenderer() *Renderer {
 		"home":     template.Must(template.New("home").Parse(layoutHTML + homeHTML)),
 		"topup":    template.Must(template.New("topup").Parse(layoutHTML + topupHTML)),
 		"config":   template.Must(template.New("config").Parse(layoutHTML + configHTML)),
+		"ledger":   template.Must(template.New("ledger").Parse(layoutHTML + ledgerHTML)),
+		"keys":     template.Must(template.New("keys").Parse(layoutHTML + keysHTML)),
 		"checkout": template.Must(template.New("checkout").Parse(checkoutHTML)),
 	}}
 }
@@ -94,9 +96,9 @@ button:hover{background:#166f30}
 button.sec{background:#fff;color:#344054;border:1px solid #d0d5dd}
 button.sec:hover{background:#f9fafb}
 .badge{padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
-.paid{background:#d4edda;color:#186a3b}
-.pending{background:#fff3cd;color:#8a6d00}
-.expired,.cancelled{background:#f8d7da;color:#8a1c1c}
+.paid{background:#d4edda;color:#0f5132}
+.pending{background:#fff3cd;color:#664d03}
+.expired,.cancelled{background:#f8d7da;color:#842029}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
 .stat{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.06);text-align:center}
 .stat .n{font-size:26px;font-weight:800;color:#101828;font-variant-numeric:tabular-nums}
@@ -123,6 +125,8 @@ form.inline{display:inline}
 <div class="menu">
 <a href="/admin" class="{{if eq .Tab "home"}}on{{end}}"><span class="ico">▤</span> Dashboard</a>
 <a href="/admin/topup" class="{{if eq .Tab "topup"}}on{{end}}"><span class="ico">▣</span> Top-up QRIS</a>
+<a href="/admin/ledger" class="{{if eq .Tab "ledger"}}on{{end}}"><span class="ico">▦</span> Mutasi Saldo</a>
+<a href="/admin/keys" class="{{if eq .Tab "keys"}}on{{end}}"><span class="ico">⧉</span> API Key Produk</a>
 <a href="/admin/config" class="{{if eq .Tab "config"}}on{{end}}"><span class="ico">⚙</span> Konfigurasi</a>
 </div>
 <div class="foot">v1.0 - JhopanStore</div>
@@ -253,9 +257,9 @@ h1{font-size:18px;margin:0 0 4px;color:#101828}
 .amount{font-size:32px;font-weight:800;margin:8px 0;font-variant-numeric:tabular-nums;color:#101828}
 .qr{width:260px;height:260px;margin:12px auto;border:1px solid #eee;border-radius:12px;padding:8px}
 .badge{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:600;font-size:14px}
-.pending{background:#fff3cd;color:#8a6d00}
-.paid{background:#d4edda;color:#186a3b}
-.expired,.cancelled{background:#f8d7da;color:#8a1c1c}
+.pending{background:#fff3cd;color:#664d03}
+.paid{background:#d4edda;color:#0f5132}
+.expired,.cancelled{background:#f8d7da;color:#842029}
 small{color:#667085}
 .paid .qr,.expired .qr,.cancelled .qr{filter:grayscale(1);opacity:.5}
 footer{margin-top:16px;font-size:11px;color:#98a2b3}
@@ -282,4 +286,58 @@ footer{margin-top:16px;font-size:11px;color:#98a2b3}
 </script>
 </body>
 </html>
+`
+
+const ledgerHTML = `
+<div class="card"><h2>Cari wallet</h2>
+<form method="get" action="/admin/ledger">
+<div class="row">
+<div><label for="wallet">Wallet User ID</label>
+<input id="wallet" name="wallet" value="{{.WalletUserID}}" placeholder="id wallet user"></div>
+<div style="flex:0;align-self:flex-end"><button type="submit">Tampilkan</button></div>
+</div>
+</form></div>
+<div class="card"><h2>Riwayat mutasi</h2><table>
+<tr><th>Waktu</th><th>Jenis</th><th>Produk</th><th>Referensi</th><th class="money">Nominal</th><th class="money">Saldo akhir</th></tr>
+{{range .Entries}}<tr>
+<td><small>{{.CreatedAt}}</small></td>
+<td>{{.EntryType}}</td>
+<td><code>{{.Product}}</code></td>
+<td><code>{{.ReferenceID}}</code></td>
+<td class="money">{{if .IsCredit}}<span style="color:#1a7f37">+{{.Amount}}</span>{{else}}<span style="color:#b42318">-{{.Amount}}</span>{{end}}</td>
+<td class="money"><b>{{.BalanceAfter}}</b></td>
+</tr>
+{{else}}<tr><td colspan="6" class="empty">Belum ada mutasi untuk wallet ini</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
+`
+
+const keysHTML = `
+{{if .NewToken}}<div class="card" style="border-color:#1a7f37">
+<h2>Token baru (salin sekarang)</h2>
+<p style="font-size:13px;color:#667085;margin:0 0 10px">Token ini hanya ditampilkan sekali. Simpan di env/bot kamu.</p>
+<code style="display:block;padding:12px;background:#f2f4f8;border-radius:8px;font-size:15px;user-select:all">{{.NewToken}}</code>
+</div>{{end}}
+<div class="card"><h2>Buat / rotasi key</h2>
+<form method="post" action="/admin/keys">
+<div class="row">
+<div><label for="product">Nama produk</label>
+<input id="product" name="product" placeholder="agenpulsa" required></div>
+<div style="flex:0;align-self:flex-end"><button type="submit">Buat key</button></div>
+</div>
+</form>
+<small style="color:#667085;display:block;margin-top:10px">Nama produk yang sudah ada akan dirotasi: token lama langsung mati.</small>
+</div>
+<div class="card"><h2>Daftar key</h2><table>
+<tr><th>Produk</th><th>Prefix</th><th>Status</th><th>Rotasi terakhir</th><th>Aksi</th></tr>
+{{range .Keys}}<tr>
+<td><code>{{.Product}}</code></td>
+<td><code>{{.TokenPrefix}}...</code></td>
+<td><span class="badge {{if .Active}}paid{{else}}expired{{end}}">{{.StatusLabel}}</span></td>
+<td><small>{{.RotatedAt}}</small></td>
+<td>{{if .Active}}<form class="inline" method="post" action="/admin/keys/{{.Product}}/revoke"><button class="sec" type="submit">nonaktifkan</button></form>{{else}}<small>-</small>{{end}}</td>
+</tr>
+{{else}}<tr><td colspan="5" class="empty">Belum ada API key</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
 `

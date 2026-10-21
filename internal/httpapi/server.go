@@ -11,6 +11,7 @@ import (
 	"github.com/jhopan/Pan-Wallet/internal/auth"
 	"github.com/jhopan/Pan-Wallet/internal/paypan"
 	"github.com/jhopan/Pan-Wallet/internal/report"
+	"github.com/jhopan/Pan-Wallet/internal/sqlite"
 	"github.com/jhopan/Pan-Wallet/internal/topup"
 	"github.com/jhopan/Pan-Wallet/internal/wallet"
 )
@@ -49,6 +50,18 @@ type SettingsStore interface {
 	SetSetting(context.Context, string, string) error
 }
 
+// LedgerStore membaca riwayat mutasi saldo.
+type LedgerStore interface {
+	LedgerEntries(context.Context, string, int) ([]sqlite.LedgerEntry, error)
+}
+
+// KeyStore mengelola API key produk.
+type KeyStore interface {
+	ListProductKeys(context.Context) ([]sqlite.ProductKey, error)
+	CreateProductKey(context.Context, string) (string, error)
+	RevokeProductKey(context.Context, string) error
+}
+
 // Deps mengumpulkan dependency server. Field nil berarti fitur terkait belum
 // aktif dan endpoint-nya menjawab 503 dengan pesan jelas.
 type Deps struct {
@@ -58,6 +71,8 @@ type Deps struct {
 	Topups   TopupStore
 	Settings SettingsStore
 	Admin    *AdminAuth
+	Ledger   LedgerStore
+	Keys     KeyStore
 }
 
 type Server struct {
@@ -95,6 +110,10 @@ func (server *Server) routes() {
 	mux.HandleFunc("POST /admin/topup", server.requireAdmin(server.adminTopupCreate))
 	mux.HandleFunc("POST /admin/topup/{id}/paid", server.requireAdmin(server.adminTopupPaid))
 	mux.HandleFunc("POST /admin/topup/{id}/sync", server.requireAdmin(server.paypanReconcile))
+	mux.HandleFunc("GET /admin/ledger", server.requireAdmin(server.adminLedger))
+	mux.HandleFunc("GET /admin/keys", server.requireAdmin(server.adminKeys))
+	mux.HandleFunc("POST /admin/keys", server.requireAdmin(server.adminKeysCreate))
+	mux.HandleFunc("POST /admin/keys/{product}/revoke", server.requireAdmin(server.adminKeysRevoke))
 	mux.HandleFunc("GET /admin/config", server.requireAdmin(server.adminConfig))
 	mux.HandleFunc("POST /admin/config", server.requireAdmin(server.adminConfigSave))
 

@@ -29,3 +29,4 @@ shot-*.png
 .chrome-tmp/
 .demo-ids
 paypan-local.log
+.chrome-*/

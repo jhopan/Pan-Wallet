@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // ProductForTokenHash mencari produk dari hash token yang aktif.
@@ -56,4 +57,45 @@ func generateToken() (string, error) {
 		return "", fmt.Errorf("buat token: %w", err)
 	}
 	return "pw_live_" + hex.EncodeToString(buffer), nil
+}
+
+// ListProductKeys menampilkan semua API key produk tanpa membocorkan token asli.
+func (store *Store) ListProductKeys(ctx context.Context) ([]ProductKey, error) {
+	rows, err := store.db.QueryContext(ctx, `
+		select product, token_hash, active, created_at, rotated_at
+		from product_api_keys order by product`)
+	if err != nil {
+		return nil, fmt.Errorf("daftar product key: %w", err)
+	}
+	defer rows.Close()
+
+	var keys []ProductKey
+	for rows.Next() {
+		var key ProductKey
+		var hash []byte
+		var active int
+		var createdAt, rotatedAt int64
+		if err := rows.Scan(&key.Product, &hash, &active, &createdAt, &rotatedAt); err != nil {
+			return nil, fmt.Errorf("baca product key: %w", err)
+		}
+		key.Active = active == 1
+		key.TokenPrefix = fmt.Sprintf("%x", hash[:3])
+		key.CreatedAt = time.Unix(createdAt, 0)
+		key.RotatedAt = time.Unix(rotatedAt, 0)
+		keys = append(keys, key)
+	}
+	return keys, rows.Err()
+}
+
+// RevokeProductKey menonaktifkan API key sebuah produk tanpa menghapus catatan.
+func (store *Store) RevokeProductKey(ctx context.Context, product string) error {
+	result, err := store.db.ExecContext(ctx,
+		`update product_api_keys set active = 0, rotated_at = ? where product = ?`, nowUnix(), product)
+	if err != nil {
+		return fmt.Errorf("revoke product key: %w", err)
+	}
+	if affected, _ := result.RowsAffected(); affected == 0 {
+		return fmt.Errorf("produk %s tidak ditemukan", product)
+	}
+	return nil
 }
