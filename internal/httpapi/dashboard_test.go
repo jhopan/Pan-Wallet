@@ -19,6 +19,7 @@ func (fakeOverviewStore) Overview(context.Context) (report.Overview, error) {
 		LedgerCount: 3,
 		Wallets: []report.OverviewWallet{{
 			WalletUserID: "e469f462-5040-450f-ac2a-48987fbbbe7f",
+			PublicID:     "E469F462",
 			Balance:      100000,
 			HeldActive:   25000,
 			Available:    75000,
@@ -60,7 +61,7 @@ func TestAdminHomeRendersWalletRows(t *testing.T) {
 		t.Fatalf("status = %d, want 200", response.Code)
 	}
 	body := response.Body.String()
-	for _, want := range []string{"100.000", "75.000", "e469f462"} {
+	for _, want := range []string{"100.000", "75.000", "E469F462"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("panel admin tidak memuat %q", want)
 		}
