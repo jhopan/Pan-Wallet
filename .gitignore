@@ -30,3 +30,5 @@ shot-*.png
 .demo-ids
 paypan-local.log
 .chrome-*/
+graceful-test.log
+*.log
