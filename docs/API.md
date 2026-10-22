@@ -7,6 +7,70 @@ Produk **tidak pernah** mengubah saldo langsung. Semua perubahan saldo lewat API
 Base URL: `http://127.0.0.1:8080` (lokal) atau domain produksi.
 Format: JSON. Error selalu `{"error": "pesan"}`.
 
+## 0. Daftar endpoint
+
+### API produk (butuh API key)
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| POST | `/v1/holds` | kunci saldo untuk satu order |
+| POST | `/v1/holds/{id}/capture` | order sukses, potong saldo |
+| POST | `/v1/holds/{id}/release` | order gagal, lepas kunci |
+| GET | `/v1/wallets/{wallet_user_id}` | cek saldo (versi produk) |
+
+### API publik (tanpa auth, rate limit 30/menit)
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/v1/public/{id}` | cek saldo pakai ID pelanggan |
+| POST | `/v1/public/{id}/topup` | buat invoice top-up |
+| GET | `/v1/public/{id}/identities` | channel yang tertaut |
+| POST | `/v1/identity/resolve` | bot tanya "ini siapa?" |
+| POST | `/v1/identity/link/start` | minta kode ikat channel baru |
+| POST | `/v1/identity/link/confirm` | konfirmasi kode dari Telegram |
+
+### Webhook
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| POST | `/webhook/paypan` | terima `order.paid` dari PayPan (HMAC) |
+
+### Halaman web
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/masuk` | form masuk pelanggan (email) |
+| POST | `/masuk` | kirim email, terbitkan kode |
+| POST | `/masuk/cek` | cek tautan, tampilkan saldo |
+| GET | `/pay/{id}` | redirect ke halaman bayar PayPan |
+| GET | `/api/topup/{id}` | status invoice (JSON) |
+| GET | `/healthz` | cek service hidup |
+| GET | `/` | 404 (disamarkan) |
+
+### Panel admin (butuh sesi login)
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/admin/login` | form login |
+| POST | `/admin/login` | proses login |
+| GET | `/admin/logout` | keluar |
+| GET | `/admin` | dashboard saldo & invoice |
+| GET | `/admin/wallets` | daftar wallet pelanggan |
+| POST | `/admin/wallets` | buat wallet baru |
+| POST | `/admin/wallets/{id}/status` | blokir / aktifkan wallet |
+| GET | `/admin/ledger` | riwayat mutasi |
+| GET | `/admin/keys` | daftar API key produk |
+| POST | `/admin/keys` | buat / rotasi key |
+| POST | `/admin/keys/{product}/revoke` | nonaktifkan key |
+| GET | `/admin/topup` | daftar invoice top-up |
+| POST | `/admin/topup` | buat invoice top-up |
+| POST | `/admin/topup/{id}/paid` | tandai lunas manual |
+| POST | `/admin/topup/{id}/sync` | cek status ke PayPan |
+| GET | `/admin/config` | halaman konfigurasi |
+| POST | `/admin/config` | simpan konfigurasi PayPan |
+
+---
+
 ---
 
 ## 1. Konsep saldo
@@ -182,7 +246,7 @@ Authorization: Bearer <api-key>
 
 ---
 
-## 6b. ID Pelanggan (dipakai semua bot)
+## 7. ID Pelanggan (dipakai semua bot)
 
 Setiap wallet punya **ID pendek 8 karakter** yang dipakai pelanggan di channel mana pun:
 
@@ -246,7 +310,7 @@ Setelah pelanggan bayar, webhook PayPan menambah saldo otomatis.
 
 ---
 
-## 6c. Identitas: satu saldo untuk semua channel
+## 8. Identitas: satu saldo untuk semua channel
 
 **Telegram adalah identitas primer.** Telegram ID diberikan oleh server Telegram,
 tidak bisa dipalsukan pelanggan — jadi aman dijadikan kunci.
@@ -359,7 +423,7 @@ Setelah ini, `resolve` dengan email tersebut mengembalikan wallet yang sama.
 
 ---
 
-## 6d. Portal pelanggan (web)
+## 9. Portal pelanggan (web)
 
 Pelanggan bisa lihat saldo di browser tanpa install apa pun.
 
@@ -383,7 +447,7 @@ Halaman ini tidak butuh password. Verifikasi terjadi lewat Telegram.
 
 ---
 
-## 6e. Rate limit endpoint publik
+## 10. Rate limit endpoint publik
 
 Semua endpoint publik dibatasi **30 permintaan per menit per IP**:
 
@@ -403,7 +467,7 @@ sadar Cloudflare dan reverse proxy.
 
 ---
 
-## 6f. Rekonsiliasi otomatis
+## 11. Rekonsiliasi otomatis
 
 Webhook bisa gagal (jaringan, firewall, restart). Karena itu ada pemeriksaan
 berkala sebagai cadangan:
@@ -418,7 +482,7 @@ Artinya: pelanggan tetap dapat saldo walau webhook tidak sampai.
 
 ---
 
-## 7. Top-up QRIS lewat PayPan
+## 12. Top-up QRIS lewat PayPan
 
 Pan-Wallet tidak membuat QR sendiri. Dia meminta invoice ke PayPan, lalu menerima webhook saat lunas.
 
@@ -466,22 +530,32 @@ Signature salah -> `403`. Webhook dobel -> saldo tetap (idempoten).
 
 ---
 
-## 8. Panel kendali
+## 13. Panel kendali
 
 | URL | Fungsi |
 |---|---|
 | `/` | 404 (disamarkan) |
 | `/admin/login` | Login panel |
 | `/admin` | Dashboard: saldo, hold, ledger, invoice |
-| `/admin/topup` | Buat invoice top-up, sync status, tandai lunas |
-| `/admin/wallets` | Daftar wallet, buat wallet baru, blokir/aktifkan |
+| `/admin/wallets` | Daftar wallet, buat wallet, blokir/aktifkan |
 | `/admin/ledger` | Riwayat mutasi saldo per wallet |
 | `/admin/keys` | Buat / rotasi / nonaktifkan API key produk |
+| `/admin/topup` | Buat invoice top-up, sync status, tandai lunas |
 | `/admin/config` | Konfigurasi PayPan |
 
----
+### Aksi panel yang mengubah data
 
-## 9. Aturan uang yang tidak boleh dilanggar
+| Aksi | Efek |
+|---|---|
+| `POST /admin/wallets` | buat wallet + ID pelanggan baru |
+| `POST /admin/wallets/{id}/status` | `blocked` = tidak bisa hold/top-up (403) |
+| `POST /admin/keys` | buat key baru; produk sama = rotasi, token lama mati |
+| `POST /admin/keys/{product}/revoke` | key langsung tidak valid (401) |
+| `POST /admin/topup` | minta invoice ke PayPan |
+| `POST /admin/topup/{id}/paid` | kredit saldo manual (idempoten) |
+| `POST /admin/topup/{id}/sync` | tanya status ke PayPan, kredit kalau lunas |
+
+## 14. Aturan uang yang tidak boleh dilanggar
 
 - Nominal integer rupiah, bukan float.
 - Saldo tidak pernah negatif.
@@ -493,7 +567,7 @@ Signature salah -> `403`. Webhook dobel -> saldo tetap (idempoten).
 
 ---
 
-## 10. Contoh lengkap (curl)
+## 15. Contoh lengkap (curl)
 
 ```bash
 # 1. cek saldo
@@ -520,7 +594,7 @@ curl -s -X POST http://127.0.0.1:8080/v1/holds/<HOLD_ID>/release \
 
 ---
 
-## 11. Status implementasi
+## 16. Status implementasi
 
 | Fitur | Status |
 |---|---|
