@@ -68,6 +68,11 @@ Format: JSON. Error selalu `{"error": "pesan"}`.
 | POST | `/admin/topup/{id}/sync` | cek status ke PayPan |
 | GET | `/admin/config` | halaman konfigurasi |
 | POST | `/admin/config` | simpan konfigurasi PayPan |
+| POST | `/admin/wallets/adjust` | tambah/kurangi saldo manual + audit |
+| GET | `/admin/audit` | jejak tindakan admin |
+| GET | `/admin/laporan` | laporan pendapatan |
+| GET | `/admin/backup` | daftar backup |
+| POST | `/admin/backup` | buat backup sekarang |
 
 ---
 
@@ -611,3 +616,98 @@ curl -s -X POST http://127.0.0.1:8080/v1/holds/<HOLD_ID>/release \
 | Cek saldo & top-up lewat ID publik | selesai |
 | Identitas Telegram (primer, auto-daftar) | selesai |
 | Ikat email/WhatsApp lewat kode Telegram | selesai |
+
+---
+
+## 17. Penyesuaian saldo manual
+
+Admin bisa menambah atau mengurangi saldo pelanggan tanpa lewat PayPan.
+Dipakai untuk bonus, koreksi selisih, atau kompensasi.
+
+```text
+POST /admin/wallets/adjust
+wallet_user_id=<id>
+amount=<positif tambah / negatif kurangi>
+reason=<alasan wajib>
+```
+
+Efek:
+- Saldo berubah, tercatat di `wallet_ledger` sebagai `adjustment`.
+- Masuk `wallet_admin_audit` dengan aksi `wallet.adjust`.
+- Ditolak bila hasilnya saldo negatif.
+- Idempoten bila `reference_id` sama.
+
+---
+
+## 18. Audit log
+
+Semua tindakan admin yang mengubah data tercatat:
+
+| Aksi | Kapan |
+|---|---|
+| `wallet.adjust` | penyesuaian saldo manual |
+| `wallet.block` | blokir pelanggan |
+
+Halaman: `/admin/audit` — menampilkan waktu, pelaku, aksi, wallet, referensi, detail.
+
+Tujuannya: kalau ada selisih saldo, bisa dilacak siapa melakukan apa dan kapan.
+
+---
+
+## 19. Backup
+
+SQLite disimpan sebagai satu berkas, jadi backup = salin berkas.
+
+- Otomatis **setiap jam**, disimpan di folder `backup/` (default).
+- Menyimpan **24 berkas terbaru**, sisanya dihapus otomatis.
+- Backup pertama dibuat **saat service start**.
+- Tombol manual: `/admin/backup` → "Buat backup sekarang".
+- Ubah folder lewat env `PAN_WALLET_BACKUP_DIR`.
+
+Untuk PostgreSQL, gunakan `pg_dump` bawaan — backup berkas tidak berlaku.
+
+---
+
+## 20. Health check
+
+`GET /healthz` memeriksa tiga komponen:
+
+```json
+{
+  "status": "ok",
+  "components": [
+    {"name": "database", "ok": true, "message": "ok"},
+    {"name": "website", "ok": true, "message": "ok"},
+    {"name": "paypan", "ok": false, "message": "belum dikonfigurasi"}
+  ]
+}
+```
+
+- `200` bila database dan website sehat.
+- `503` bila database mati atau template gagal termuat.
+- `paypan` hanya informasi, tidak memengaruhi status.
+
+---
+
+## 21. Graceful shutdown
+
+Saat menerima `SIGINT`/`SIGTERM`, service:
+
+1. Berhenti menerima koneksi baru.
+2. Menyelesaikan permintaan yang sedang berjalan (maks 15 detik).
+3. Menutup database dengan rapi.
+
+Aman untuk `systemctl restart` tanpa merusak transaksi berjalan.
+
+---
+
+## 22. Laporan pendapatan
+
+Halaman `/admin/laporan` menampilkan:
+
+- Pendapatan hari ini + jumlah transaksi
+- Total pendapatan (hanya invoice `paid`)
+- Jumlah invoice per status: lunas / tertunda / kedaluwarsa
+- Rekap harian 30 hari terakhir
+
+Pendapatan dihitung dari `total` invoice yang **lunas**, bukan dari saldo tersimpan.

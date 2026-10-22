@@ -20,6 +20,7 @@ type Settings struct {
 	Driver        Driver
 	DatabaseURL   string // postgres: connection URL
 	DatabasePath  string // sqlite: path file .db
+	BackupDir     string // folder cadangan SQLite
 	AdminUsername string
 	AdminPassword string
 }
@@ -71,8 +72,14 @@ func Load() Settings {
 		databasePath = "data/pan-wallet.db"
 	}
 
+	backupDir := os.Getenv("PAN_WALLET_BACKUP_DIR")
+	if backupDir == "" {
+		backupDir = "backup"
+	}
+
 	return Settings{
 		Address:       address,
+		BackupDir:     backupDir,
 		Driver:        driver,
 		DatabaseURL:   os.Getenv("PAN_WALLET_DATABASE_URL"),
 		DatabasePath:  databasePath,

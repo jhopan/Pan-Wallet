@@ -85,6 +85,10 @@ type Deps struct {
 	PublicIDs  PublicIDStore
 	Identities IdentityStore
 	Reconcile  ReconcileStore
+	Pinger     Pinger
+	Audit      AuditStore
+	Revenue    RevenueStore
+	Backup     BackupRunner
 }
 
 type Server struct {
@@ -148,7 +152,7 @@ func (server *Server) routes() {
 	mux := server.mux
 
 	// Publik
-	mux.HandleFunc("GET /healthz", health)
+	mux.HandleFunc("GET /healthz", server.healthDetail)
 	mux.HandleFunc("GET /pay/{id}", server.checkout)
 	mux.HandleFunc("GET /api/topup/{id}", server.topupStatus)
 	mux.HandleFunc("POST /v1/identity/resolve", server.limitPublic(server.identityResolve))
@@ -176,6 +180,11 @@ func (server *Server) routes() {
 	mux.HandleFunc("POST /admin/wallets", server.requireAdmin(server.adminWalletsCreate))
 	mux.HandleFunc("POST /admin/wallets/{id}/status", server.requireAdmin(server.adminWalletsStatus))
 	mux.HandleFunc("GET /admin/ledger", server.requireAdmin(server.adminLedger))
+	mux.HandleFunc("GET /admin/audit", server.requireAdmin(server.adminAudit))
+	mux.HandleFunc("GET /admin/laporan", server.requireAdmin(server.adminReport))
+	mux.HandleFunc("POST /admin/wallets/adjust", server.requireAdmin(server.adminAdjust))
+	mux.HandleFunc("GET /admin/backup", server.requireAdmin(server.adminBackup))
+	mux.HandleFunc("POST /admin/backup", server.requireAdmin(server.adminBackupRun))
 	mux.HandleFunc("GET /admin/keys", server.requireAdmin(server.adminKeys))
 	mux.HandleFunc("POST /admin/keys", server.requireAdmin(server.adminKeysCreate))
 	mux.HandleFunc("POST /admin/keys/{product}/revoke", server.requireAdmin(server.adminKeysRevoke))

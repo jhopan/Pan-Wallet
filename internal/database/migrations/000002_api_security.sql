@@ -9,7 +9,7 @@ create table if not exists product_api_keys (
 
 create table if not exists wallet_admin_audit (
   id uuid primary key default gen_random_uuid(),
-  actor_user_id uuid,
+  actor text not null default 'admin',
   action text not null,
   wallet_user_id uuid references wallet_users(id),
   reference_id text not null,

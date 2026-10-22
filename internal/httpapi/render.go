@@ -20,6 +20,9 @@ func NewRenderer() *Renderer {
 		"wallets":  template.Must(template.New("wallets").Parse(layoutHTML + walletsHTML)),
 		"ledger":   template.Must(template.New("ledger").Parse(layoutHTML + ledgerHTML)),
 		"keys":     template.Must(template.New("keys").Parse(layoutHTML + keysHTML)),
+		"audit":    template.Must(template.New("audit").Parse(layoutHTML + auditHTML)),
+		"report":   template.Must(template.New("report").Parse(layoutHTML + reportHTML)),
+		"backup":   template.Must(template.New("backup").Parse(layoutHTML + backupHTML)),
 		"checkout": template.Must(template.New("checkout").Parse(checkoutHTML)),
 		"portal":   template.Must(template.New("portal").Parse(portalHTML)),
 	}}
@@ -130,6 +133,9 @@ form.inline{display:inline}
 <a href="/admin/wallets" class="{{if eq .Tab "wallets"}}on{{end}}"><span class="ico">◉</span> Wallet User</a>
 <a href="/admin/ledger" class="{{if eq .Tab "ledger"}}on{{end}}"><span class="ico">▦</span> Mutasi Saldo</a>
 <a href="/admin/keys" class="{{if eq .Tab "keys"}}on{{end}}"><span class="ico">⧉</span> API Key Produk</a>
+<a href="/admin/laporan" class="{{if eq .Tab "report"}}on{{end}}"><span class="ico">▩</span> Laporan</a>
+<a href="/admin/audit" class="{{if eq .Tab "audit"}}on{{end}}"><span class="ico">☰</span> Audit Log</a>
+<a href="/admin/backup" class="{{if eq .Tab "backup"}}on{{end}}"><span class="ico">⛁</span> Backup</a>
 <a href="/admin/config" class="{{if eq .Tab "config"}}on{{end}}"><span class="ico">⚙</span> Konfigurasi</a>
 </div>
 <div class="foot">v1.0 - JhopanStore</div>
@@ -356,6 +362,19 @@ const walletsHTML = `
 </form>
 <small style="color:#667085;display:block;margin-top:10px">ID wallet dibuat otomatis. Saldo awal boleh 0, nanti diisi lewat top-up QRIS.</small>
 </div>
+<div class="card"><h2>Sesuaikan saldo manual</h2>
+<form method="post" action="/admin/wallets/adjust">
+<div class="row">
+<div><label for="adj_wallet">Wallet User ID</label><input id="adj_wallet" name="wallet_user_id" required placeholder="id wallet"></div>
+<div><label for="adj_amount">Nominal (+ tambah / - kurangi)</label><input id="adj_amount" name="amount" type="number" step="1" required placeholder="50000"></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div><label for="adj_reason">Alasan (wajib)</label><input id="adj_reason" name="reason" required placeholder="bonus / koreksi selisih"></div>
+<div style="flex:0;align-self:flex-end"><button type="submit">Simpan</button></div>
+</div>
+</form>
+<small style="color:#667085;display:block;margin-top:10px">Tercatat di ledger sebagai adjustment dan masuk audit log.</small>
+</div>
 <div class="card"><h2>Daftar wallet</h2><table>
 <tr><th>Dibuat</th><th>ID Pelanggan</th><th>Status</th><th class="money">Saldo</th><th class="money">Tertahan</th><th class="money">Tersedia</th><th>Aksi</th></tr>
 {{range .Wallets}}<tr>
@@ -478,4 +497,56 @@ footer{color:#98a2b3;font-size:11px;text-align:center;margin-top:8px}
 </div>
 </body>
 </html>
+`
+
+const reportHTML = `
+<div class="stats">
+  <div class="stat"><div class="n">{{.TodayRevenue}}</div><div class="l">Pendapatan hari ini</div></div>
+  <div class="stat"><div class="n">{{.TodayCount}}</div><div class="l">Transaksi hari ini</div></div>
+  <div class="stat"><div class="n">{{.TotalRevenue}}</div><div class="l">Total pendapatan</div></div>
+  <div class="stat"><div class="n">{{.PaidCount}}</div><div class="l">Invoice lunas</div></div>
+</div>
+<div class="card"><h2>Status invoice</h2><table>
+<tr><th>Status</th><th class="money">Jumlah</th></tr>
+<tr><td><span class="badge paid">lunas</span></td><td class="money">{{.PaidCount}}</td></tr>
+<tr><td><span class="badge pending">tertunda</span></td><td class="money">{{.PendingCount}}</td></tr>
+<tr><td><span class="badge expired">kedaluwarsa</span></td><td class="money">{{.ExpiredCount}}</td></tr>
+</table></div>
+<div class="card"><h2>Pendapatan harian (30 hari)</h2><table>
+<tr><th>Tanggal</th><th class="money">Transaksi</th><th class="money">Pendapatan</th></tr>
+{{range .Days}}<tr><td>{{.Date}}</td><td class="money">{{.Count}}</td><td class="money"><b>{{.Revenue}}</b></td></tr>
+{{else}}<tr><td colspan="3" class="empty">Belum ada pendapatan</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
+`
+
+const auditHTML = `
+<div class="card"><h2>Jejak tindakan admin</h2>
+<small style="color:#667085;display:block;margin-bottom:12px">Semua perubahan saldo, blokir, dan rotasi key tercatat di sini.</small>
+<table>
+<tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Wallet</th><th>Referensi</th><th>Detail</th></tr>
+{{range .Entries}}<tr>
+<td><small>{{.CreatedAt}}</small></td>
+<td>{{.Actor}}</td>
+<td><code>{{.Action}}</code></td>
+<td><small>{{.Wallet}}</small></td>
+<td><small>{{.Reference}}</small></td>
+<td><small>{{.Details}}</small></td>
+</tr>
+{{else}}<tr><td colspan="6" class="empty">Belum ada aktivitas</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
+`
+
+const backupHTML = `
+<div class="card"><h2>Backup database</h2>
+<p style="font-size:13px;color:#667085;margin:0 0 12px">Backup otomatis dibuat setiap jam dan disimpan di folder <code>backup/</code>. Berkas lama dihapus otomatis agar tidak menumpuk.</p>
+<form method="post" action="/admin/backup"><button type="submit">Buat backup sekarang</button></form>
+</div>
+<div class="card"><h2>Daftar backup</h2><table>
+<tr><th>Berkas</th><th class="money">Ukuran</th><th>Dibuat</th></tr>
+{{range .Backups}}<tr><td><code>{{.Name}}</code></td><td class="money">{{.Size}}</td><td><small>{{.CreatedAt}}</small></td></tr>
+{{else}}<tr><td colspan="3" class="empty">Belum ada backup</td></tr>{{end}}
+</table></div>
+</div></div></div></body></html>
 `

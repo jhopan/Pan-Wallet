@@ -54,3 +54,8 @@ func Open(ctx context.Context, path string) (*Store, error) {
 func (store *Store) Close() {
 	store.db.Close()
 }
+
+// Ping memeriksa koneksi database masih hidup.
+func (store *Store) Ping(ctx context.Context) error {
+	return store.db.PingContext(ctx)
+}

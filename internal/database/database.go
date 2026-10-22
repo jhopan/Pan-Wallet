@@ -73,3 +73,8 @@ func (store *Store) ApplyMigrations(ctx context.Context) error {
 	}
 	return nil
 }
+
+// Ping memeriksa koneksi PostgreSQL masih hidup.
+func (store *Store) Ping(ctx context.Context) error {
+	return store.pool.Ping(ctx)
+}

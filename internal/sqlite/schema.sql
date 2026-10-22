@@ -96,7 +96,7 @@ create table if not exists product_api_keys (
 
 create table if not exists wallet_admin_audit (
   id text primary key,
-  actor_user_id text,
+  actor text not null default 'admin',
   action text not null,
   wallet_user_id text references wallet_users(id),
   reference_id text not null,
