@@ -563,6 +563,8 @@ Signature salah -> `403`. Webhook dobel -> saldo tetap (idempoten).
 ## 14. Aturan uang yang tidak boleh dilanggar
 
 - Nominal integer rupiah, bukan float.
+- Top-up minimal **Rp25.000**.
+- Saldo **tidak dapat diuangkan** atau ditarik tunai. Hanya untuk transaksi di layanan Jhopan.
 - Saldo tidak pernah negatif.
 - Hold mengurangi `available`, bukan `balance`.
 - Capture hanya sekali per hold.

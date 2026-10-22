@@ -19,7 +19,7 @@ var ErrInvoiceNotFound = errors.New("invoice tidak ditemukan")
 // Pan-Wallet tidak menghitung kode/total sendiri: PayPan yang menentukan.
 func (store *Store) CreateTopupInvoice(ctx context.Context, client *paypan.Client, walletUserID string, price int64) (topup.Invoice, error) {
 	if price < topup.MinPrice {
-		return topup.Invoice{}, fmt.Errorf("nominal top-up minimal Rp%d", topup.MinPrice)
+		return topup.Invoice{}, fmt.Errorf("nominal top-up minimal Rp25.000")
 	}
 	if price > topup.MaxPrice {
 		return topup.Invoice{}, fmt.Errorf("nominal top-up maksimal Rp%d", topup.MaxPrice)

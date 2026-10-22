@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-// MinPrice adalah nominal top-up terendah yang diterima PayPan.
-// 3 digit terakhir dipakai PayPan sebagai kode unik invoice.
-const MinPrice int64 = 1000
+// MinPrice adalah nominal top-up terendah. Ditetapkan Rp25.000 supaya
+// biaya QRIS dan kode unik tetap wajar dibanding nominalnya.
+const MinPrice int64 = 25_000
 
 // MaxPrice adalah batas atas PayPan (kode unik hanya 3 digit).
 const MaxPrice int64 = 9_000_000
@@ -29,7 +29,7 @@ type Invoice struct {
 
 func (invoice Invoice) Validate() error {
 	if invoice.Price < MinPrice {
-		return fmt.Errorf("nominal top-up minimal Rp%d", MinPrice)
+		return fmt.Errorf("nominal top-up minimal Rp25.000")
 	}
 	if invoice.Price > MaxPrice {
 		return fmt.Errorf("nominal top-up maksimal Rp%d", MaxPrice)

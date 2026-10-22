@@ -173,7 +173,7 @@ const topupHTML = `
 <form method="post" action="/admin/topup">
 <div class="row">
 <div><label for="wallet_user_id">Wallet User ID</label><input id="wallet_user_id" name="wallet_user_id" required placeholder="id wallet user"></div>
-<div><label for="price">Nominal top-up (Rp)</label><input id="price" name="price" type="number" min="1000" step="1" required placeholder="25000"></div>
+<div><label for="price">Nominal top-up (Rp)</label><input id="price" name="price" type="number" min="25000" step="1" required placeholder="25000"></div>
 <div style="flex:0;align-self:flex-end"><button type="submit">Buat invoice</button></div>
 </div>
 </form></div>
@@ -434,7 +434,7 @@ footer{color:#98a2b3;font-size:11px;text-align:center;margin-top:8px}
 {{if eq .Step "email"}}
 <div class="card">
   <h1>Saldo Saya</h1>
-  <p class="sub">Masukkan email yang sudah terhubung ke bot Telegram.</p>
+  <p class="sub">Masukkan email yang sudah terhubung ke bot Telegram.<br>Minimal top-up Rp 25.000. Saldo tidak dapat diuangkan.</p>
   {{if .Error}}<div class="err">{{.Error}}</div>{{end}}
   <form method="post" action="/masuk">
     <label for="email">Email</label>
@@ -468,7 +468,10 @@ footer{color:#98a2b3;font-size:11px;text-align:center;margin-top:8px}
   <div class="rowline"><span>Tertahan</span><b>Rp {{.Held}}</b></div>
   <div class="rowline"><span>Total saldo</span><b>Rp {{.Balance}}</b></div>
   <div class="rowline"><span>Status</span><b><span class="badge">{{.Status}}</span></b></div>
-  <footer>Untuk top-up, buka bot Telegram Pan-Wallet</footer>
+  <div style="margin-top:14px;padding:10px 12px;background:#fff8e6;border:1px solid #ffe0a3;border-radius:8px;font-size:12px;color:#7a5a00">
+    Saldo hanya bisa dipakai untuk transaksi di layanan kami. Saldo tidak dapat diuangkan atau ditarik tunai.
+  </div>
+  <footer>Untuk top-up, buka bot Telegram Pan-Wallet. Minimal top-up Rp 25.000.</footer>
 </div>
 
 <div class="card">
