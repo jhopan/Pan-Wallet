@@ -156,8 +156,8 @@ const homeHTML = `
   <div class="stat"><div class="n">{{.PendingCount}}</div><div class="l">Invoice tertunda</div></div>
 </div>
 <div class="card"><h2>Saldo pelanggan</h2><table>
-<tr><th>Wallet User</th><th class="money">Saldo</th><th class="money">Tertahan</th><th class="money">Tersedia</th></tr>
-{{range .Wallets}}<tr><td><code>{{.WalletUserID}}</code></td><td class="money">{{.Balance}}</td><td class="money">{{.HeldActive}}</td><td class="money"><b>{{.Available}}</b></td></tr>
+<tr><th>ID Pelanggan</th><th class="money">Saldo</th><th class="money">Tertahan</th><th class="money">Tersedia</th></tr>
+{{range .Wallets}}<tr><td><b style="letter-spacing:0.05em">{{.PublicID}}</b></td><td class="money">{{.Balance}}</td><td class="money">{{.HeldActive}}</td><td class="money"><b>{{.Available}}</b></td></tr>
 {{else}}<tr><td colspan="4" class="empty">Belum ada wallet</td></tr>{{end}}
 </table></div>
 <div class="card"><h2>Invoice top-up terbaru</h2><table>

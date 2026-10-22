@@ -31,6 +31,7 @@ type adminRow struct {
 // adminWallet adalah baris saldo terformat untuk panel.
 type adminWallet struct {
 	WalletUserID string
+	PublicID     string
 	Balance      Money
 	HeldActive   Money
 	Available    Money
@@ -51,6 +52,7 @@ func (server *Server) adminHome(response http.ResponseWriter, request *http.Requ
 	for _, wallet := range overview.Wallets {
 		wallets = append(wallets, adminWallet{
 			WalletUserID: wallet.WalletUserID,
+			PublicID:     wallet.PublicID,
 			Balance:      Money(wallet.Balance),
 			HeldActive:   Money(wallet.HeldActive),
 			Available:    Money(wallet.Available),

@@ -10,6 +10,7 @@ type Overview struct {
 
 type OverviewWallet struct {
 	WalletUserID string
+	PublicID     string
 	Balance      int64
 	HeldActive   int64
 	Available    int64

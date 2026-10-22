@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/jhopan/Pan-Wallet/internal/sqlite"
 )
 
 // WalletRowView adalah baris wallet untuk tampilan panel.
@@ -103,6 +105,20 @@ func (server *Server) adminWalletsStatus(response http.ResponseWriter, request *
 		redirectWith(response, request, "/admin/wallets", "err", err.Error())
 		return
 	}
+
+	// Catat jejak: siapa memblokir/mengaktifkan, kapan.
+	if server.deps.Audit != nil {
+		action := "wallet.block"
+		if status == "active" {
+			action = "wallet.unblock"
+		}
+		_ = server.deps.Audit.RecordAudit(request.Context(), sqlite.AuditEntry{
+			Actor: server.adminUser(), Action: action,
+			WalletUserID: walletUserID, ReferenceID: walletUserID,
+			Details: "status menjadi " + status,
+		})
+	}
+
 	label := "diaktifkan"
 	if status == "blocked" {
 		label = "diblokir"

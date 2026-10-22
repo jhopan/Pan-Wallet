@@ -20,9 +20,10 @@ func (store *Store) Overview(ctx context.Context) (report.Overview, error) {
 	}
 
 	rows, err := store.db.QueryContext(ctx, `
-		select w.wallet_user_id, w.balance, w.currency,
+		select w.wallet_user_id, u.public_id, w.balance, w.currency,
 		       coalesce((select sum(h.amount) from wallet_holds h where h.wallet_id = w.id and h.status = 'active'), 0)
-		from wallets w order by w.updated_at desc`)
+		from wallets w join wallet_users u on u.id = w.wallet_user_id
+		order by w.updated_at desc`)
 	if err != nil {
 		return report.Overview{}, fmt.Errorf("daftar wallet: %w", err)
 	}
@@ -30,7 +31,7 @@ func (store *Store) Overview(ctx context.Context) (report.Overview, error) {
 
 	for rows.Next() {
 		var item report.OverviewWallet
-		if err := rows.Scan(&item.WalletUserID, &item.Balance, &item.Currency, &item.HeldActive); err != nil {
+		if err := rows.Scan(&item.WalletUserID, &item.PublicID, &item.Balance, &item.Currency, &item.HeldActive); err != nil {
 			return report.Overview{}, fmt.Errorf("baca wallet: %w", err)
 		}
 		item.Available = item.Balance - item.HeldActive
