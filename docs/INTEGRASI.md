@@ -203,10 +203,44 @@ Pan-Wallet bisa mengirim webhook setiap ada top-up lunas. Isi di panel
 POST https://bot-toko-kamu/hook/panwallet
 Content-Type: application/json
 
-{"event":"topup.paid","public_id":"65ZMPUNP","amount":50001,"balance":50001}
+{
+  "event": "topup.paid",
+  "public_id": "65ZMPUNP",
+  "amount": 25004,
+  "balance": 125004,
+  "paid_at": 1790000000,
+  "invoice_id": "5d73c16e..."
+}
 ```
 
+Field penting:
+
+| Field | Arti |
+|---|---|
+| `amount` | nominal top-up (sudah termasuk kode unik) |
+| `balance` | **saldo pelanggan setelah** top-up ini |
+| `paid_at` | waktu lunas, unix detik (zona server) |
+| `invoice_id` | id invoice internal, untuk rekonsiliasi |
+
 Event yang dikirim: `topup.paid`, `test`.
+
+### Kirim ke topic supergrup (mis. Testimoni)
+
+Telegram mengirim pesan ke supergrup dengan `message_thread_id`:
+
+```bash
+curl -s -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" \
+  -d "chat_id=-1001234567890" \
+  -d "message_thread_id=12" \
+  -d "text=Top-up berhasil Rp25.004"
+```
+
+Pan-Wallet sudah mendukung ini: panel **Konfigurasi → Notifikasi →
+Topic ID supergrup**. Isi angka topic-nya (bukan nama).
+
+**Penting:** webhook hanya dikirim **sekali per pelunasan**. Kalau PayPan
+mengirim ulang webhook yang sama (retry), notifikasi tidak akan dobel —
+dijaga oleh flag `FreshlyPaid` di sisi Pan-Wallet.
 
 Kalau bot toko ingin tahu saldo pelanggan berubah, cukup panggil
 `GET /v1/public/<public_id>` saat dibutuhkan — tidak perlu menyimpan saldo.

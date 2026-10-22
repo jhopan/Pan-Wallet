@@ -22,31 +22,47 @@ func (server *Server) notifySettings(ctx context.Context) (token, chats, webhook
 }
 
 // SendTopupPaid memberi tahu admin bahwa saldo masuk.
-func (server *Server) SendTopupPaid(ctx context.Context, publicID string, amount, balance int64) error {
+// Pesan sengaja dibuat layak ditempel ke grup testimoni: ada tanggal,
+// jam, nominal, dan ID pelanggan.
+func (server *Server) SendTopupPaid(ctx context.Context, event notify.TopupEvent) error {
 	token, chats, webhook := server.notifySettings(ctx)
+	topic, _ := server.deps.Settings.Setting(ctx, "notify_tg_topic")
 
-	message := fmt.Sprintf(
-		"Top-up masuk\n\nID Pelanggan: %s\nNominal: Rp %s\nSaldo sekarang: Rp %s",
-		publicID, Rupiah(amount), Rupiah(balance),
-	)
+	message := TopupMessage(event)
+	target := notify.NewTelegram(token, chats, "")
+	if strings.TrimSpace(topic) != "" {
+		target = target.WithTopic(strings.TrimSpace(topic))
+	}
 
 	var firstErr error
-	if token != "" && chats != "" {
-		if err := notify.NewTelegram(token, chats, "").Send(ctx, message); err != nil {
+	if target.Enabled() {
+		if err := target.Send(ctx, message); err != nil {
 			firstErr = err
 		}
 	}
 	if webhook != "" {
-		body := notify.WebhookBody("topup.paid", map[string]any{
-			"public_id": publicID,
-			"amount":    amount,
-			"balance":   balance,
-		})
+		body := notify.WebhookBodyFrom(event.Payload())
 		if err := notify.PostWebhook(ctx, webhook, body); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
 	return firstErr
+}
+
+// TopupMessage menyusun teks notifikasi/testimoni.
+func TopupMessage(event notify.TopupEvent) string {
+	paidAt := event.PaidTime()
+	return fmt.Sprintf(
+		"Top-up berhasil\n\n"+
+			"ID Pelanggan: %s\n"+
+			"Nominal: Rp %s\n"+
+			"Saldo sekarang: Rp %s\n"+
+			"Waktu: %s",
+		event.PublicID,
+		Rupiah(event.Amount),
+		Rupiah(event.Balance),
+		paidAt.Format("02 Jan 2006, 15:04 WIB"),
+	)
 }
 
 // SendTest mengirim pesan uji ke kanal yang dikonfigurasi.

@@ -25,6 +25,14 @@ type Invoice struct {
 	Source        string
 	ExpiresAt     time.Time
 	PayURL        string
+
+	// BalanceAfter adalah saldo wallet setelah top-up ini dikredit.
+	// Diisi oleh store supaya notifikasi melaporkan saldo yang benar,
+	// bukan menebak dari nominal invoice.
+	BalanceAfter int64
+	// FreshlyPaid true hanya pada pelunasan pertama. Webhook ganda dari
+	// PayPan tidak boleh mengirim notifikasi atau testimoni dua kali.
+	FreshlyPaid bool
 }
 
 func (invoice Invoice) Validate() error {

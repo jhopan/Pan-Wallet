@@ -99,6 +99,9 @@ func (store *Store) MarkTopupPaidByPaypan(ctx context.Context, paypanInvoiceID, 
 	invoice.ExpiresAt = time.Unix(expiresAt, 0)
 
 	if invoice.Status == "paid" {
+		// Sudah pernah dilunasi: webhook ganda / retry PayPan.
+		// Jangan kredit ulang, dan jangan kirim notifikasi lagi.
+		invoice.BalanceAfter = balanceOf(ctx, tx, walletID)
 		return invoice, tx.Commit()
 	}
 	if !topup.CanTransition(invoice.Status, "paid") {
@@ -128,6 +131,8 @@ func (store *Store) MarkTopupPaidByPaypan(ctx context.Context, paypanInvoiceID, 
 		return topup.Invoice{}, fmt.Errorf("tandai lunas: %w", err)
 	}
 	invoice.Status = "paid"
+	invoice.BalanceAfter = balance
+	invoice.FreshlyPaid = true
 	if err := tx.Commit(); err != nil {
 		return topup.Invoice{}, fmt.Errorf("simpan pelunasan: %w", err)
 	}
@@ -237,4 +242,11 @@ func (store *Store) PendingTopupInvoices(ctx context.Context, olderThan time.Tim
 		invoices = append(invoices, invoice)
 	}
 	return invoices, rows.Err()
+}
+
+// balanceOf membaca saldo wallet di dalam transaksi.
+func balanceOf(ctx context.Context, tx *sql.Tx, walletID string) int64 {
+	var balance int64
+	_ = tx.QueryRowContext(ctx, `select balance from wallets where id = ?`, walletID).Scan(&balance)
+	return balance
 }

@@ -140,6 +140,7 @@ func (server *Server) adminConfig(response http.ResponseWriter, request *http.Re
 		webhookSecret, _ = server.deps.Settings.Setting(request.Context(), "paypan_webhook_secret")
 	}
 	notifyToken, notifyChat, notifyWebhook := server.notifySettings(request.Context())
+	notifyTopic, _ := server.deps.Settings.Setting(request.Context(), "notify_tg_topic")
 
 	scheme := "http"
 	if request.TLS != nil {
@@ -163,6 +164,7 @@ func (server *Server) adminConfig(response http.ResponseWriter, request *http.Re
 		"NotifyToken":   notifyToken,
 		"NotifyChat":    notifyChat,
 		"NotifyWebhook": notifyWebhook,
+		"NotifyTopic":   notifyTopic,
 		"Flash":         request.URL.Query().Get("ok"),
 		"Error":         request.URL.Query().Get("err"),
 		"User":          server.adminUser(),

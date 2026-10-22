@@ -222,6 +222,9 @@ const configHTML = `
 <input id="notify_tg_token" name="notify_tg_token" placeholder="123456789:AA..." value="{{.NotifyToken}}">
 <label for="notify_tg_chat">Chat ID admin (boleh beberapa, pisah koma)</label>
 <input id="notify_tg_chat" name="notify_tg_chat" placeholder="123456789,987654321" value="{{.NotifyChat}}">
+<label for="notify_tg_topic">Topic ID supergrup (opsional)</label>
+<input id="notify_tg_topic" name="notify_tg_topic" placeholder="12" value="{{.NotifyTopic}}">
+<small style="color:#667085;display:block;margin-top:4px">Isi angka topic tujuan (mis. topic Testimoni). Kosongkan untuk kirim ke chat utama.</small>
 <label for="notify_webhook_url">Webhook URL (opsional)</label>
 <input id="notify_webhook_url" name="notify_webhook_url" placeholder="https://bot-anda/hook" value="{{.NotifyWebhook}}">
 <div style="margin-top:16px"><button type="submit">Simpan</button></div>

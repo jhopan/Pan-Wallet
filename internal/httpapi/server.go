@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/jhopan/Pan-Wallet/internal/notify"
 	"net/http"
 	"strings"
 	"time"
@@ -94,7 +95,7 @@ type Deps struct {
 
 // NotifyStore mengirim notifikasi keluar (Telegram / webhook).
 type NotifyStore interface {
-	SendTopupPaid(ctx context.Context, publicID string, amount, balance int64) error
+	SendTopupPaid(ctx context.Context, event notify.TopupEvent) error
 	SendTest(ctx context.Context) error
 }
 

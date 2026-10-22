@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jhopan/Pan-Wallet/internal/notify"
 	"github.com/jhopan/Pan-Wallet/internal/paypan"
 )
 
@@ -88,18 +89,27 @@ func (server *Server) paypanWebhook(response http.ResponseWriter, request *http.
 		writeError(response, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	// Kabari admin (Telegram / webhook) tanpa menahan respons ke PayPan.
-	if server.deps.Notify != nil {
+	// Kabari admin (Telegram / webhook) hanya pada pelunasan PERTAMA.
+	// PayPan mengirim ulang webhook yang sama bila tidak menerima 200,
+	// jadi tanpa penjagaan ini testimoni bisa terkirim berkali-kali.
+	if invoice.FreshlyPaid && server.deps.Notify != nil {
 		publicID := invoice.WalletUserID
 		if server.deps.PublicIDs != nil {
 			if resolved, err := server.deps.PublicIDs.PublicIDByWalletUserID(request.Context(), invoice.WalletUserID); err == nil {
 				publicID = resolved
 			}
 		}
+		event := notify.TopupEvent{
+			PublicID:  publicID,
+			Amount:    invoice.Total,
+			Balance:   invoice.BalanceAfter,
+			PaidAt:    time.Now().Unix(),
+			InvoiceID: invoice.ID,
+		}
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
-			_ = server.deps.Notify.SendTopupPaid(ctx, publicID, invoice.Total, invoice.Total)
+			_ = server.deps.Notify.SendTopupPaid(ctx, event)
 		}()
 	}
 

@@ -21,6 +21,7 @@ type Telegram struct {
 	token   string
 	chats   []string
 	baseURL string
+	topic   string
 	http    *http.Client
 }
 
@@ -43,6 +44,14 @@ func NewTelegram(token, chats, baseURL string) *Telegram {
 	}
 }
 
+// WithTopic mengarahkan pesan ke satu topik di supergrup forum.
+// Topik adalah message_thread_id, bukan nama topik.
+func (telegram *Telegram) WithTopic(topic string) *Telegram {
+	copied := *telegram
+	copied.topic = strings.TrimSpace(topic)
+	return &copied
+}
+
 // Enabled melaporkan apakah notifikasi Telegram siap dipakai.
 func (telegram *Telegram) Enabled() bool {
 	return telegram.token != "" && len(telegram.chats) > 0
@@ -60,6 +69,9 @@ func (telegram *Telegram) Send(ctx context.Context, text string) error {
 		form.Set("chat_id", chat)
 		form.Set("text", text)
 		form.Set("disable_web_page_preview", "true")
+		if telegram.topic != "" {
+			form.Set("message_thread_id", telegram.topic)
+		}
 
 		endpoint := fmt.Sprintf("%s/bot%s/sendMessage", telegram.baseURL, telegram.token)
 		request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
@@ -100,6 +112,12 @@ func (telegram *Telegram) Send(ctx context.Context, text string) error {
 		}
 	}
 	return firstErr
+}
+
+// WebhookBodyFrom membungkus payload yang sudah jadi menjadi JSON.
+func WebhookBodyFrom(payload map[string]any) []byte {
+	encoded, _ := json.Marshal(payload)
+	return encoded
 }
 
 // WebhookBody menyusun payload JSON untuk penerima webhook.
