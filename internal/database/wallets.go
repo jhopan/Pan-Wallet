@@ -120,3 +120,17 @@ func (store *Store) ResolvePublicID(ctx context.Context, publicID string) (sqlit
 	row.Available = row.Balance - row.HeldActive
 	return row, nil
 }
+
+// PublicIDByWalletUserID mencari public_id dari UUID internal wallet user.
+func (store *Store) PublicIDByWalletUserID(ctx context.Context, walletUserID string) (string, error) {
+	var publicID string
+	err := store.pool.QueryRow(ctx,
+		`select public_id from wallet_users where id = $1`, walletUserID).Scan(&publicID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrInvoiceNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("cari public id wallet: %w", err)
+	}
+	return publicID, nil
+}

@@ -89,6 +89,13 @@ type Deps struct {
 	Audit      AuditStore
 	Revenue    RevenueStore
 	Backup     BackupRunner
+	Notify     NotifyStore
+}
+
+// NotifyStore mengirim notifikasi keluar (Telegram / webhook).
+type NotifyStore interface {
+	SendTopupPaid(ctx context.Context, publicID string, amount, balance int64) error
+	SendTest(ctx context.Context) error
 }
 
 type Server struct {
@@ -144,6 +151,12 @@ func clientIP(request *http.Request) string {
 	return host
 }
 
+// SetNotifier memasang pengirim notifikasi setelah server dibuat.
+// Dipisah karena notifier membaca setting lewat server itu sendiri.
+func (server *Server) SetNotifier(notifier NotifyStore) {
+	server.deps.Notify = notifier
+}
+
 func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Request) {
 	server.mux.ServeHTTP(response, request)
 }
@@ -190,6 +203,8 @@ func (server *Server) routes() {
 	mux.HandleFunc("POST /admin/keys/{product}/revoke", server.requireAdmin(server.adminKeysRevoke))
 	mux.HandleFunc("GET /admin/config", server.requireAdmin(server.adminConfig))
 	mux.HandleFunc("POST /admin/config", server.requireAdmin(server.adminConfigSave))
+	mux.HandleFunc("POST /admin/notify", server.requireAdmin(server.adminNotifySave))
+	mux.HandleFunc("POST /admin/notify/test", server.requireAdmin(server.adminNotifyTest))
 
 	// API produk (butuh product key)
 	mux.HandleFunc("POST /v1/holds", server.requireProductAuth(server.hold))

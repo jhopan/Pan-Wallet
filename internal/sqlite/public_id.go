@@ -54,3 +54,18 @@ func (store *Store) ResolvePublicID(ctx context.Context, publicID string) (Walle
 	row.Available = row.Balance - row.HeldActive
 	return row, nil
 }
+
+// PublicIDByWalletUserID mencari public_id dari UUID internal wallet user.
+// Dipakai notifikasi & log supaya yang tampil selalu ID pelanggan, bukan UUID.
+func (store *Store) PublicIDByWalletUserID(ctx context.Context, walletUserID string) (string, error) {
+	var publicID string
+	err := store.db.QueryRowContext(ctx,
+		`select public_id from wallet_users where id = ?`, walletUserID).Scan(&publicID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrInvoiceNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("cari public id wallet: %w", err)
+	}
+	return publicID, nil
+}

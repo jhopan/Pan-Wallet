@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/jhopan/Pan-Wallet/internal/paypan"
 )
@@ -87,6 +88,21 @@ func (server *Server) paypanWebhook(response http.ResponseWriter, request *http.
 		writeError(response, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
+	// Kabari admin (Telegram / webhook) tanpa menahan respons ke PayPan.
+	if server.deps.Notify != nil {
+		publicID := invoice.WalletUserID
+		if server.deps.PublicIDs != nil {
+			if resolved, err := server.deps.PublicIDs.PublicIDByWalletUserID(request.Context(), invoice.WalletUserID); err == nil {
+				publicID = resolved
+			}
+		}
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			_ = server.deps.Notify.SendTopupPaid(ctx, publicID, invoice.Total, invoice.Total)
+		}()
+	}
+
 	writeJSON(response, http.StatusOK, map[string]any{
 		"ok": true, "invoice": invoice.ID, "credited": invoice.Total,
 	})

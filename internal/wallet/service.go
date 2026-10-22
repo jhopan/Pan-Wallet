@@ -34,14 +34,17 @@ func (request CreateHoldRequest) Validate() error {
 	return nil
 }
 
+// Hold adalah saldo yang dikunci sementara untuk satu transaksi.
+// Tag JSON memakai snake_case supaya konsisten dengan endpoint lain —
+// bot lain cukup membaca .id, bukan .ID.
 type Hold struct {
-	ID             string
-	WalletUserID   string
-	Product        string
-	ReferenceID    string
-	Amount         int64
-	Status         string
-	IdempotencyKey string
+	ID             string `json:"id"`
+	WalletUserID   string `json:"wallet_user_id"`
+	Product        string `json:"product"`
+	ReferenceID    string `json:"reference_id"`
+	Amount         int64  `json:"amount"`
+	Status         string `json:"status"`
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 type TransitionRequest struct {

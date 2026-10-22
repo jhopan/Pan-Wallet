@@ -12,6 +12,7 @@ import (
 // PublicIDStore mencari wallet lewat ID pendek yang dipakai pelanggan.
 type PublicIDStore interface {
 	ResolvePublicID(context.Context, string) (sqlite.WalletRow, error)
+	PublicIDByWalletUserID(context.Context, string) (string, error)
 }
 
 // publicWallet melayani GET /v1/public/{id} — dipakai bot Telegram/WhatsApp

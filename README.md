@@ -72,3 +72,18 @@ internal/topup/   alokasi kode unik invoice
 internal/wallet/  aturan hold/capture/release
 docs/             kontrak API
 ```
+
+## Notifikasi
+
+Panel → **Konfigurasi → Notifikasi** bisa mengirim kabar saat ada top-up masuk.
+
+Dua jalur, keduanya HTTP biasa jadi gampang dicampur dengan sistem lain:
+
+1. **Telegram** — isi bot token + chat ID admin (boleh beberapa, pisah koma).
+2. **Webhook** — isi URL, Pan-Wallet akan POST JSON:
+
+```json
+{"event":"topup.paid","public_id":"65ZMPUNP","amount":50001,"balance":50001}
+```
+
+Tombol **Kirim pesan uji** tersedia untuk memastikan konfigurasi benar.

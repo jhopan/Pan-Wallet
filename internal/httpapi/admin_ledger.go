@@ -119,9 +119,16 @@ func (server *Server) adminKeys(response http.ResponseWriter, request *http.Requ
 		})
 	}
 
+	scheme := "http"
+	if request.TLS != nil {
+		scheme = "https"
+	}
+	baseURL := scheme + "://" + request.Host
+
 	data := map[string]any{
 		"Title":    "API Key Produk",
 		"Tab":      "keys",
+		"BaseURL":  baseURL,
 		"Keys":     rows,
 		"NewToken": request.URL.Query().Get("token"),
 		"Flash":    request.URL.Query().Get("ok"),

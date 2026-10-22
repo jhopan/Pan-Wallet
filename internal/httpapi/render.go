@@ -214,6 +214,23 @@ const configHTML = `
 </table>
 <small style="color:#667085;display:block;margin-top:10px">Daftarkan URL webhook di atas ke admin PayPan &rarr; Konfigurasi &rarr; Webhook, lalu salin secret-nya ke kolom Webhook secret.</small>
 </div>
+
+<div class="card"><h2>Notifikasi</h2>
+<p style="font-size:13px;color:#667085;margin:0 0 14px">Dapatkan kabar saat ada top-up masuk. Bisa lewat Telegram, webhook, atau keduanya.</p>
+<form method="post" action="/admin/notify">
+<label for="notify_tg_token">Telegram bot token</label>
+<input id="notify_tg_token" name="notify_tg_token" placeholder="123456789:AA..." value="{{.NotifyToken}}">
+<label for="notify_tg_chat">Chat ID admin (boleh beberapa, pisah koma)</label>
+<input id="notify_tg_chat" name="notify_tg_chat" placeholder="123456789,987654321" value="{{.NotifyChat}}">
+<label for="notify_webhook_url">Webhook URL (opsional)</label>
+<input id="notify_webhook_url" name="notify_webhook_url" placeholder="https://bot-anda/hook" value="{{.NotifyWebhook}}">
+<div style="margin-top:16px"><button type="submit">Simpan</button></div>
+</form>
+<form method="post" action="/admin/notify/test" style="margin-top:12px">
+<button class="sec" type="submit">Kirim pesan uji</button>
+</form>
+<small style="color:#667085;display:block;margin-top:10px">Pesan uji memakai konfigurasi yang sudah tersimpan. Simpan dulu sebelum menguji.</small>
+</div>
 </div></div></div></body></html>
 `
 
@@ -337,6 +354,41 @@ const keysHTML = `
 </form>
 <small style="color:#667085;display:block;margin-top:10px">Nama produk yang sudah ada akan dirotasi: token lama langsung mati.</small>
 </div>
+<div class="card"><h2>Cara pakai untuk bot lain</h2>
+<p style="font-size:13px;color:#667085;margin:0 0 12px">
+Bot toko (AgenPulsa, Xray, dll) memakai <b>API key produk</b> di atas untuk cek saldo dan memotong saldo.
+Bot tidak boleh menyimpan saldo sendiri.
+</p>
+
+<h3 style="font-size:13px;margin:16px 0 6px">1. Cek saldo pelanggan</h3>
+<pre style="background:#f2f4f8;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:0">curl -s {{.BaseURL}}/v1/wallets/&lt;wallet_user_id&gt; \
+  -H "Authorization: Bearer &lt;API_KEY&gt;"</pre>
+
+<h3 style="font-size:13px;margin:16px 0 6px">2. Kunci saldo sebelum order (hold)</h3>
+<pre style="background:#f2f4f8;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:0">curl -s -X POST {{.BaseURL}}/v1/holds \
+  -H "Authorization: Bearer &lt;API_KEY&gt;" \
+  -H "Idempotency-Key: hold:&lt;REF&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"wallet_user_id":"&lt;ID&gt;","reference_id":"&lt;REF&gt;","amount":25000,"expires_at":"2030-01-01T00:00:00Z"}'</pre>
+
+<h3 style="font-size:13px;margin:16px 0 6px">3a. Order sukses &rarr; potong saldo</h3>
+<pre style="background:#f2f4f8;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:0">curl -s -X POST {{.BaseURL}}/v1/holds/&lt;HOLD_ID&gt;/capture \
+  -H "Authorization: Bearer &lt;API_KEY&gt;" \
+  -H "Idempotency-Key: capture:&lt;REF&gt;"</pre>
+
+<h3 style="font-size:13px;margin:16px 0 6px">3b. Order gagal &rarr; lepas kunci</h3>
+<pre style="background:#f2f4f8;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:0">curl -s -X POST {{.BaseURL}}/v1/holds/&lt;HOLD_ID&gt;/release \
+  -H "Authorization: Bearer &lt;API_KEY&gt;" \
+  -H "Idempotency-Key: release:&lt;REF&gt;"</pre>
+
+<h3 style="font-size:13px;margin:16px 0 6px">4. Cek saldo pakai ID pelanggan (tanpa API key)</h3>
+<pre style="background:#f2f4f8;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:0">curl -s {{.BaseURL}}/v1/public/&lt;PUBLIC_ID&gt;</pre>
+
+<small style="color:#667085;display:block;margin-top:14px">
+Dokumentasi lengkap: <code>docs/API.md</code> di repo Pan-Wallet.
+</small>
+</div>
+
 <div class="card"><h2>Daftar key</h2><table>
 <tr><th>Produk</th><th>Prefix</th><th>Status</th><th>Rotasi terakhir</th><th>Aksi</th></tr>
 {{range .Keys}}<tr>

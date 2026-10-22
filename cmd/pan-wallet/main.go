@@ -90,6 +90,8 @@ func main() {
 	}()
 
 	server := httpapi.New(deps)
+	// Notifier butuh server (untuk membaca setting), jadi dipasang setelah dibuat.
+	server.SetNotifier(server)
 	server.StartReconciler(context.Background())
 
 	httpServer := &http.Server{
