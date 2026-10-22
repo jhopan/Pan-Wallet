@@ -1,5 +1,8 @@
 # Pan-Wallet
 
+
+**Dokumentasi:** [API](docs/API.md) · [Panduan integrasi bot lain](docs/INTEGRASI.md)
+
 Wallet pusat untuk saldo Jhopan lintas produk: AgenPulsa, AutoBuy, Tembak Paket XL, Xray Premium, dan produk berikutnya. Produk menjadi client API; hanya Pan-Wallet yang mengelola saldo, QRIS PayPan, hold, capture, release, refund, dan ledger.
 
 ## Status
