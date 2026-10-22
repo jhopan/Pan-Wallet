@@ -110,7 +110,7 @@ func TestTopupInvoiceLookupByPaypanID(t *testing.T) {
 	_, client := fakePaypan(t, 20_005)
 	ctx := context.Background()
 
-	created, err := store.CreateTopupInvoice(ctx, client, userID, 20_000)
+	created, err := store.CreateTopupInvoice(ctx, client, userID, 25_000)
 	if err != nil {
 		t.Fatalf("buat invoice: %v", err)
 	}
