@@ -239,15 +239,15 @@ curl -s -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" \
 Pan-Wallet sudah mendukung ini: panel **Konfigurasi → Notifikasi →
 Topic ID supergrup**. Isi angka topic-nya (bukan nama).
 
-Kalau topic diisi, Pan-Wallet otomatis memakai **format testimoni tanpa total
-saldo** — hanya nominal top-up, ID pelanggan, dan waktu:
+Kalau topic diisi, Pan-Wallet otomatis memakai **format testimoni tanpa data
+sensitif** — tanpa total saldo dan **tanpa ID pelanggan** (ID adalah kunci
+akses saldo, jadi tidak boleh dipajang di topic yang bisa dibaca banyak orang):
 
 ```
 Top-up berhasil
 
-ID Pelanggan: J26MZ2AD
 Nominal: Rp 25.000
-Masuk saldo: Rp 25.002
+Masuk saldo: Rp 25.001
 Waktu: 24 Oct 2026, 13:15 WIB
 ```
 
