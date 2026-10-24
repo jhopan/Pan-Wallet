@@ -64,11 +64,13 @@ func TopupMessage(event notify.TopupEvent) string {
 		requested = event.Amount
 	}
 
-	// Tanpa ID pelanggan: topic publik bisa dibaca siapa saja, dan ID
-	// adalah kunci untuk mengakses saldo. Cukup nominal + waktu.
+	// Notifikasi admin tetap memuat ID pelanggan supaya kamu tahu
+	// siapa yang top-up. Hanya versi topic publik yang menyembunyikannya.
 	message := fmt.Sprintf(
 		"Top-up berhasil\n\n"+
+			"ID Pelanggan: %s\n"+
 			"Nominal: Rp %s\n",
+		event.PublicID,
 		Rupiah(requested),
 	)
 	if event.Amount != requested {
