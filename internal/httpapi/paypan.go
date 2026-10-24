@@ -101,6 +101,7 @@ func (server *Server) paypanWebhook(response http.ResponseWriter, request *http.
 		}
 		event := notify.TopupEvent{
 			PublicID:  publicID,
+			Requested: invoice.Price,
 			Amount:    invoice.Total,
 			Balance:   invoice.BalanceAfter,
 			PaidAt:    time.Now().Unix(),

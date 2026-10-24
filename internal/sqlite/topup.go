@@ -113,6 +113,15 @@ func (store *Store) MarkTopupPaidByPaypan(ctx context.Context, paypanInvoiceID, 
 		`select balance from wallets where id = ?`, walletID).Scan(&balance); err != nil {
 		return topup.Invoice{}, fmt.Errorf("baca saldo: %w", err)
 	}
+	// Total yang masuk saldo harus persis price + kode unik.
+	// Kalau tidak cocok, jangan kredit sama sekali — lebih baik gagal
+	// daripada pelanggan kurang 1 rupiah.
+	if invoice.Total != invoice.Price+int64(invoice.Code) {
+		return topup.Invoice{}, fmt.Errorf(
+			"total invoice tidak konsisten: total %d, price %d, kode %d",
+			invoice.Total, invoice.Price, invoice.Code)
+	}
+
 	balance += invoice.Total
 	if _, err := tx.ExecContext(ctx,
 		`update wallets set balance = ?, updated_at = ? where id = ?`, balance, nowUnix(), walletID); err != nil {

@@ -52,17 +52,32 @@ func (server *Server) SendTopupPaid(ctx context.Context, event notify.TopupEvent
 // TopupMessage menyusun teks notifikasi/testimoni.
 func TopupMessage(event notify.TopupEvent) string {
 	paidAt := event.PaidTime()
-	return fmt.Sprintf(
+
+	// Yang dilaporkan sebagai "nominal top-up" adalah angka yang diminta
+	// pelanggan (25.000). Total unik (25.004) tetap masuk saldo penuh,
+	// dan ditampilkan terpisah supaya tidak ada yang merasa kurang.
+	requested := event.Requested
+	if requested == 0 {
+		requested = event.Amount
+	}
+
+	message := fmt.Sprintf(
 		"Top-up berhasil\n\n"+
 			"ID Pelanggan: %s\n"+
-			"Nominal: Rp %s\n"+
-			"Saldo sekarang: Rp %s\n"+
-			"Waktu: %s",
+			"Nominal: Rp %s\n",
 		event.PublicID,
-		Rupiah(event.Amount),
+		Rupiah(requested),
+	)
+	if event.Amount != requested {
+		message += fmt.Sprintf("Masuk saldo: Rp %s (termasuk kode unik)\n", Rupiah(event.Amount))
+	}
+	message += fmt.Sprintf(
+		"Saldo sekarang: Rp %s\n"+
+			"Waktu: %s",
 		Rupiah(event.Balance),
 		paidAt.Format("02 Jan 2006, 15:04 WIB"),
 	)
+	return message
 }
 
 // SendTest mengirim pesan uji ke kanal yang dikonfigurasi.

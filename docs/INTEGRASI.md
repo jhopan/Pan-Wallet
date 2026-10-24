@@ -217,7 +217,8 @@ Field penting:
 
 | Field | Arti |
 |---|---|
-| `amount` | nominal top-up (sudah termasuk kode unik) |
+| `requested` | nominal yang diminta pelanggan, mis. `25000` |
+| `amount` | **yang benar-benar masuk saldo**: nominal + kode unik, mis. `25001` |
 | `balance` | **saldo pelanggan setelah** top-up ini |
 | `paid_at` | waktu lunas, unix detik (zona server) |
 | `invoice_id` | id invoice internal, untuk rekonsiliasi |
@@ -237,6 +238,21 @@ curl -s -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" \
 
 Pan-Wallet sudah mendukung ini: panel **Konfigurasi → Notifikasi →
 Topic ID supergrup**. Isi angka topic-nya (bukan nama).
+
+### Nominal vs saldo masuk
+
+PayPan menambahkan kode unik 1–999 ke total invoice. Yang masuk saldo
+**selalu total penuh**, tidak dipotong:
+
+```
+diminta pelanggan : Rp 25.000
+kode unik PayPan  : Rp      1
+masuk saldo       : Rp 25.001   <- utuh, tanpa kurang 1 rupiah
+```
+
+Pan-Wallet memverifikasi `total == price + code` sebelum mengkredit. Kalau
+tidak cocok, kredit **dibatalkan** dan invoice ditolak — lebih baik gagal
+daripada pelanggan kehilangan 1 rupiah.
 
 **Penting:** webhook hanya dikirim **sekali per pelunasan**. Kalau PayPan
 mengirim ulang webhook yang sama (retry), notifikasi tidak akan dobel —
