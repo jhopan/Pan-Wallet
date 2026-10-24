@@ -67,3 +67,21 @@ func escapeSQL(value string) string {
 func timestampedName(now time.Time) string {
 	return fmt.Sprintf("pan-wallet-%s.db", now.Format("20060102-150405"))
 }
+
+// CountRows memastikan berkas backup dapat dibuka dan menghitung baris
+// pada satu tabel. Dipakai untuk memverifikasi hasil backup sebelum
+// diunggah — backup yang tidak bisa dibuka harus dianggap gagal.
+func CountRows(path, table string) (int, error) {
+	connection, err := sql.Open("sqlite", "file:"+filepath.ToSlash(path)+"?mode=ro")
+	if err != nil {
+		return 0, fmt.Errorf("buka backup: %w", err)
+	}
+	defer connection.Close()
+
+	var total int
+	query := "select count(*) from " + table
+	if err := connection.QueryRow(query).Scan(&total); err != nil {
+		return 0, fmt.Errorf("hitung %s: %w", table, err)
+	}
+	return total, nil
+}

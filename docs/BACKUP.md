@@ -40,25 +40,48 @@ database dan backup ikut hilang bersamaan. Ini **bukan** backup sungguhan.
 
 ---
 
-## 2. Backup ke Google Drive / cloud (disarankan)
+## 2. Backup ke Google Drive (disarankan)
 
-Pakai `rclone`. Sekali pasang, lalu jadwalkan.
+Pan-Wallet sudah menyertakan program `backup-drive` yang melakukan
+snapshot + unggah + verifikasi + bersih-bersih dalam satu perintah.
 
 ```bash
-# 1. pasang rclone, lalu hubungkan Google Drive
-rclone config          # pilih n, beri nama "gdrive", pilih Google Drive
+# sekali saja: hubungkan Google Drive ke rclone
+rclone config          # pilih n, beri nama "jhopan", pilih Google Drive
 
-# 2. salin backup ke Drive
-rclone copy backup/ gdrive:Pan-Wallet-Backup/ --include "*.db"
+# coba dulu tanpa mengunggah
+./backup-drive -remote jhopan -dry-run
 
-# 3. jadwalkan tiap 6 jam (Linux)
-crontab -e
-0 */6 * * * cd /opt/pan-wallet && rclone copy backup/ gdrive:Pan-Wallet-Backup/ --include "*.db"
+# jalankan sungguhan
+./backup-drive -remote jhopan
 ```
 
-Windows (Task Scheduler), atau lebih sederhana pakai WSL.
+Keluarannya:
 
-**Kelebihan:** otomatis, punya versi lama (Drive menyimpan revisi),
+```
+[1/4] snapshot data/pan-wallet.db
+      backup/pan-wallet-20261025-064820.db (184.0 KB)
+[2/4] verifikasi isi
+      pelanggan: 1
+[3/4] unggah ke jhopan:Pan-Wallet-Backup/
+[4/4] hapus backup > 30 hari
+selesai.
+```
+
+Langkah 2 penting: kalau backup tidak bisa dibuka, proses berhenti dan
+**tidak** mengunggah file rusak.
+
+Jadwalkan tiap 6 jam:
+
+```bash
+crontab -e
+0 */6 * * * cd /opt/pan-wallet && ./backup-drive -remote jhopan >> backup.log 2>&1
+```
+
+Windows: Task Scheduler → *Create Basic Task* → jalankan
+`backup-drive.exe -remote jhopan` setiap 6 jam.
+
+**Kelebihan:** otomatis, ada versi lama (Drive menyimpan revisi),
 tidak hilang kalau VPS mati.
 
 ---
