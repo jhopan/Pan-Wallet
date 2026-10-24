@@ -142,7 +142,10 @@ func (server *Server) loginSubmit(response http.ResponseWriter, request *http.Re
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int((12 * time.Hour).Seconds()),
+		// Secure wajib di produksi (HTTPS). Saat uji lokal via http,
+		// cookie Secure tidak akan dikirim browser, jadi dideteksi dari request.
+		Secure: isHTTPS(request),
+		MaxAge: int((12 * time.Hour).Seconds()),
 	})
 	http.Redirect(response, request, "/admin", http.StatusFound)
 }

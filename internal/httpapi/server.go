@@ -104,6 +104,9 @@ type Server struct {
 	deps     Deps
 	renderer *Renderer
 	limiter  *ratelimit.Limiter
+	// loginLimiter membatasi percobaan login admin per alamat IP.
+	// Tanpa ini, password bisa ditebak ribuan kali per detik.
+	loginLimiter *ratelimit.Limiter
 }
 
 // publicLimit: 30 permintaan per menit per IP untuk endpoint publik.
@@ -116,6 +119,8 @@ func New(deps Deps) *Server {
 		deps:     deps,
 		renderer: NewRenderer(),
 		limiter:  ratelimit.New(publicLimitPerMinute, time.Minute),
+		// 8 percobaan per menit: cukup untuk salah ketik, tidak cukup untuk menebak.
+		loginLimiter: ratelimit.New(8, time.Minute),
 	}
 	server.routes()
 	return server
@@ -128,6 +133,21 @@ func (server *Server) limitPublic(next http.HandlerFunc) http.HandlerFunc {
 		if !server.limiter.Allow(key) {
 			response.Header().Set("Retry-After", "60")
 			writeError(response, http.StatusTooManyRequests, "terlalu banyak permintaan, coba lagi sebentar")
+			return
+		}
+		next.ServeHTTP(response, request)
+	}
+}
+
+// limitLogin membatasi percobaan login admin per alamat IP.
+// Sengaja lebih ketat daripada endpoint publik: 8 kali per menit.
+func (server *Server) limitLogin(next http.HandlerFunc) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		key := clientIP(request)
+		if !server.loginLimiter.Allow(key) {
+			response.Header().Set("Retry-After", "60")
+			writeError(response, http.StatusTooManyRequests,
+				"terlalu banyak percobaan login, tunggu satu menit")
 			return
 		}
 		next.ServeHTTP(response, request)
@@ -159,7 +179,8 @@ func (server *Server) SetNotifier(notifier NotifyStore) {
 }
 
 func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Request) {
-	server.mux.ServeHTTP(response, request)
+	// Header pengaman + penjagaan origin (CSRF) untuk semua permintaan.
+	sameOriginOnly(securityHeaders(server.mux)).ServeHTTP(response, request)
 }
 
 func (server *Server) routes() {
@@ -180,7 +201,7 @@ func (server *Server) routes() {
 	mux.HandleFunc("POST /masuk", server.limitPublic(server.portalStart))
 	mux.HandleFunc("POST /masuk/cek", server.limitPublic(server.portalCheck))
 	mux.HandleFunc("GET /admin/login", server.loginPage)
-	mux.HandleFunc("POST /admin/login", server.loginSubmit)
+	mux.HandleFunc("POST /admin/login", server.limitLogin(server.loginSubmit))
 	mux.HandleFunc("GET /admin/logout", server.logout)
 
 	// Panel kendali (butuh sesi admin)
