@@ -23,6 +23,7 @@ func NewRenderer() *Renderer {
 		"audit":    template.Must(template.New("audit").Parse(layoutHTML + auditHTML)),
 		"report":   template.Must(template.New("report").Parse(layoutHTML + reportHTML)),
 		"backup":   template.Must(template.New("backup").Parse(layoutHTML + backupHTML)),
+		"export":   template.Must(template.New("export").Parse(layoutHTML + exportHTML)),
 		"checkout": template.Must(template.New("checkout").Parse(checkoutHTML)),
 		"portal":   template.Must(template.New("portal").Parse(portalHTML)),
 	}}
@@ -135,6 +136,7 @@ form.inline{display:inline}
 <a href="/admin/keys" class="{{if eq .Tab "keys"}}on{{end}}"><span class="ico">⧉</span> API Key Produk</a>
 <a href="/admin/laporan" class="{{if eq .Tab "report"}}on{{end}}"><span class="ico">▩</span> Laporan</a>
 <a href="/admin/audit" class="{{if eq .Tab "audit"}}on{{end}}"><span class="ico">☰</span> Audit Log</a>
+<a href="/admin/export" class="{{if eq .Tab "export"}}on{{end}}"><span class="ico">⇩</span> Ekspor Data</a>
 <a href="/admin/backup" class="{{if eq .Tab "backup"}}on{{end}}"><span class="ico">⛁</span> Backup</a>
 <a href="/admin/config" class="{{if eq .Tab "config"}}on{{end}}"><span class="ico">⚙</span> Konfigurasi</a>
 </div>
@@ -607,4 +609,25 @@ const backupHTML = `
 {{else}}<tr><td colspan="3" class="empty">Belum ada backup</td></tr>{{end}}
 </table></div>
 </div></div></div></body></html>
+`
+
+const exportHTML = `
+<div class="card"><h2>Ekspor data ke spreadsheet</h2>
+<p style="font-size:13px;color:#667085;margin:0 0 14px">
+Hasil ekspor berupa CSV — bisa langsung dibuka di Google Sheets, Excel, atau LibreOffice.
+Tabel konfigurasi (token PayPan, webhook secret) <b>tidak ikut diekspor</b> supaya rahasia tidak bocor.
+</p>
+<form method="post" action="/admin/export"><button type="submit">Buat ekspor sekarang</button></form>
+<small style="color:#667085;display:block;margin-top:10px">Berkas disimpan di folder <code>export/</code> pada server.</small>
+</div>
+
+<div class="card"><h2>Tabel yang diekspor</h2><table>
+<tr><th>Nama</th><th>Isi</th></tr>
+{{range .Tables}}<tr><td><code>{{.Name}}</code></td><td>{{.Description}}</td></tr>{{end}}
+</table>
+</div>
+
+<div class="card"><h2>Ringkasan</h2>
+<pre style="background:#f2f4f8;padding:14px;border-radius:8px;font-size:13px;margin:0;white-space:pre-wrap">{{if .Ringkasan}}{{.Ringkasan}}{{else}}(belum ada data){{end}}</pre>
+</div>
 `

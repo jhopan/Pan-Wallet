@@ -56,6 +56,12 @@ func (store *Store) Close() {
 }
 
 // Ping memeriksa koneksi database masih hidup.
+// DB memberi akses database untuk keperluan ekspor/laporan.
+// Jangan dipakai menulis data bisnis — semua perubahan wajib lewat store.
+func (store *Store) DB() *sql.DB {
+	return store.db
+}
+
 func (store *Store) Ping(ctx context.Context) error {
 	return store.db.PingContext(ctx)
 }

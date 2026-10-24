@@ -1,7 +1,7 @@
 # Pan-Wallet
 
 
-**Dokumentasi:** [API](docs/API.md) · [Panduan integrasi bot lain](docs/INTEGRASI.md)
+**Dokumentasi:** [API](docs/API.md) · [Integrasi bot lain](docs/INTEGRASI.md) · [Backup & pemulihan](docs/BACKUP.md)
 
 **Bot Telegram:** [pan-wallet-telebot](https://github.com/jhopan/pan-wallet-telebot)
 

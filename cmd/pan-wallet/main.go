@@ -53,6 +53,7 @@ func main() {
 		deps.Pinger = store
 		deps.Audit = store
 		deps.Revenue = store
+		deps.Database = store.DB()
 		closeStore = store.Close
 
 	default:
@@ -75,6 +76,7 @@ func main() {
 		deps.Pinger = store
 		deps.Audit = store
 		deps.Revenue = store
+
 		closeStore = store.Close
 	}
 	defer closeStore()

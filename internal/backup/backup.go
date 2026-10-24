@@ -43,30 +43,15 @@ func (runner *Runner) Once() (Backup, error) {
 		return Backup{}, fmt.Errorf("buat folder backup: %w", err)
 	}
 
-	source, err := os.Open(runner.sourcePath)
-	if err != nil {
-		return Backup{}, fmt.Errorf("buka database: %w", err)
-	}
-	defer source.Close()
-
-	name := fmt.Sprintf("pan-wallet-%s.db", time.Now().Format("20060102-150405"))
+	name := timestampedName(time.Now())
 	target := filepath.Join(runner.dir, name)
 
-	destination, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
-	if err != nil {
-		return Backup{}, fmt.Errorf("buat berkas backup: %w", err)
-	}
-	defer destination.Close()
-
-	if _, err := destination.ReadFrom(source); err != nil {
-		return Backup{}, fmt.Errorf("salin database: %w", err)
-	}
-
-	info, err := destination.Stat()
+	size, err := Snapshot(runner.sourcePath, target)
 	if err != nil {
 		return Backup{}, err
 	}
-	backup := Backup{Name: name, SizeBytes: info.Size(), CreatedAt: time.Now()}
+
+	backup := Backup{Name: name, SizeBytes: size, CreatedAt: time.Now()}
 
 	if err := runner.prune(); err != nil {
 		return backup, err

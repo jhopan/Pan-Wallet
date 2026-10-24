@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/jhopan/Pan-Wallet/internal/notify"
@@ -96,6 +97,8 @@ type Deps struct {
 	TrustedProxies []string
 	// PublicBaseURL dipakai menyusun URL absolut (webhook, pay_url).
 	PublicBaseURL string
+	// Database dipakai halaman ekspor CSV.
+	Database *sql.DB
 }
 
 // NotifyStore mengirim notifikasi keluar (Telegram / webhook).
@@ -238,6 +241,9 @@ func (server *Server) routes() {
 	mux.HandleFunc("GET /admin/audit", server.requireAdmin(server.adminAudit))
 	mux.HandleFunc("GET /admin/laporan", server.requireAdmin(server.adminReport))
 	mux.HandleFunc("POST /admin/wallets/adjust", server.requireAdmin(server.adminAdjust))
+	mux.HandleFunc("GET /admin/export", server.requireAdmin(server.adminExport))
+	mux.HandleFunc("POST /admin/export", server.requireAdmin(server.adminExportRun))
+	mux.HandleFunc("GET /admin/export/download", server.requireAdmin(server.adminExportDownload))
 	mux.HandleFunc("GET /admin/backup", server.requireAdmin(server.adminBackup))
 	mux.HandleFunc("POST /admin/backup", server.requireAdmin(server.adminBackupRun))
 	mux.HandleFunc("GET /admin/keys", server.requireAdmin(server.adminKeys))
