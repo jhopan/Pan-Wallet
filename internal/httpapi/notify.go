@@ -28,9 +28,12 @@ func (server *Server) SendTopupPaid(ctx context.Context, event notify.TopupEvent
 	token, chats, webhook := server.notifySettings(ctx)
 	topic, _ := server.deps.Settings.Setting(ctx, "notify_tg_topic")
 
+	// Kalau diarahkan ke topic (biasanya Testimoni, bisa dibaca banyak orang),
+	// pakai versi ringkas tanpa total saldo.
 	message := TopupMessage(event)
 	target := notify.NewTelegram(token, chats, "")
 	if strings.TrimSpace(topic) != "" {
+		message = TopupMessageCompact(event)
 		target = target.WithTopic(strings.TrimSpace(topic))
 	}
 
@@ -100,6 +103,30 @@ func (server *Server) SendTest(ctx context.Context) error {
 		}
 	}
 	return firstErr
+}
+
+// TopupMessageCompact adalah versi untuk topic publik (testimoni).
+// Sengaja TANPA total saldo: cukup bukti nominal top-up, tanggal, dan jam.
+func TopupMessageCompact(event notify.TopupEvent) string {
+	paidAt := event.PaidTime()
+
+	requested := event.Requested
+	if requested == 0 {
+		requested = event.Amount
+	}
+
+	message := fmt.Sprintf(
+		"Top-up berhasil\n\n"+
+			"ID Pelanggan: %s\n"+
+			"Nominal: Rp %s\n",
+		event.PublicID,
+		Rupiah(requested),
+	)
+	if event.Amount != requested {
+		message += fmt.Sprintf("Masuk saldo: Rp %s\n", Rupiah(event.Amount))
+	}
+	message += fmt.Sprintf("Waktu: %s", paidAt.Format("02 Jan 2006, 15:04 WIB"))
+	return message
 }
 
 // adminNotifySave menyimpan konfigurasi notifikasi.
