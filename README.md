@@ -3,6 +3,8 @@
 
 **Dokumentasi:** [API](docs/API.md) · [Panduan integrasi bot lain](docs/INTEGRASI.md)
 
+**Bot Telegram:** [pan-wallet-telebot](https://github.com/jhopan/pan-wallet-telebot)
+
 Wallet pusat untuk saldo Jhopan lintas produk: AgenPulsa, AutoBuy, Tembak Paket XL, Xray Premium, dan produk berikutnya. Produk menjadi client API; hanya Pan-Wallet yang mengelola saldo, QRIS PayPan, hold, capture, release, refund, dan ledger.
 
 ## Status
