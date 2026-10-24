@@ -91,6 +91,11 @@ type Deps struct {
 	Revenue    RevenueStore
 	Backup     BackupRunner
 	Notify     NotifyStore
+	// TrustedProxies adalah daftar IP/CIDR reverse proxy (cloudflared, nginx)
+	// yang boleh mengirim header X-Forwarded-For / CF-Connecting-IP.
+	TrustedProxies []string
+	// PublicBaseURL dipakai menyusun URL absolut (webhook, pay_url).
+	PublicBaseURL string
 }
 
 // NotifyStore mengirim notifikasi keluar (Telegram / webhook).
@@ -107,6 +112,8 @@ type Server struct {
 	// loginLimiter membatasi percobaan login admin per alamat IP.
 	// Tanpa ini, password bisa ditebak ribuan kali per detik.
 	loginLimiter *ratelimit.Limiter
+	// trustedProxies menentukan siapa yang boleh mengirim header IP.
+	trustedProxies *trustedProxies
 }
 
 // publicLimit: 30 permintaan per menit per IP untuk endpoint publik.
@@ -121,6 +128,8 @@ func New(deps Deps) *Server {
 		limiter:  ratelimit.New(publicLimitPerMinute, time.Minute),
 		// 8 percobaan per menit: cukup untuk salah ketik, tidak cukup untuk menebak.
 		loginLimiter: ratelimit.New(8, time.Minute),
+
+		trustedProxies: newTrustedProxies(deps.TrustedProxies),
 	}
 	server.routes()
 	return server
@@ -129,7 +138,7 @@ func New(deps Deps) *Server {
 // limitPublic membatasi endpoint publik per IP. Balas 429 saat habis.
 func (server *Server) limitPublic(next http.HandlerFunc) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		key := clientIP(request)
+		key := server.clientIP(request)
 		if !server.limiter.Allow(key) {
 			response.Header().Set("Retry-After", "60")
 			writeError(response, http.StatusTooManyRequests, "terlalu banyak permintaan, coba lagi sebentar")
@@ -143,7 +152,7 @@ func (server *Server) limitPublic(next http.HandlerFunc) http.HandlerFunc {
 // Sengaja lebih ketat daripada endpoint publik: 8 kali per menit.
 func (server *Server) limitLogin(next http.HandlerFunc) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		key := clientIP(request)
+		key := server.clientIP(request)
 		if !server.loginLimiter.Allow(key) {
 			response.Header().Set("Retry-After", "60")
 			writeError(response, http.StatusTooManyRequests,
@@ -154,22 +163,33 @@ func (server *Server) limitLogin(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// clientIP mengambil IP pemanggil, sadar proxy (Cloudflare / reverse proxy).
-func clientIP(request *http.Request) string {
-	if forwarded := request.Header.Get("CF-Connecting-IP"); forwarded != "" {
-		return forwarded
-	}
-	if forwarded := request.Header.Get("X-Forwarded-For"); forwarded != "" {
-		if comma := strings.Index(forwarded, ","); comma > 0 {
-			return strings.TrimSpace(forwarded[:comma])
+// clientIP mengambil IP pemanggil.
+// Header X-Forwarded-For / CF-Connecting-IP HANYA dipercaya kalau
+// koneksi datang dari reverse proxy yang terdaftar. Tanpa ini,
+// penyerang bisa memalsukan IP dan melewati rate limit sepenuhnya.
+func (server *Server) clientIP(request *http.Request) string {
+	remote := hostOnly(request.RemoteAddr)
+
+	if server.trustedProxies.contains(remote) {
+		if forwarded := strings.TrimSpace(request.Header.Get("CF-Connecting-IP")); forwarded != "" {
+			return forwarded
 		}
-		return strings.TrimSpace(forwarded)
+		if forwarded := request.Header.Get("X-Forwarded-For"); forwarded != "" {
+			if comma := strings.Index(forwarded, ","); comma > 0 {
+				return strings.TrimSpace(forwarded[:comma])
+			}
+			return strings.TrimSpace(forwarded)
+		}
 	}
-	host := request.RemoteAddr
-	if colon := strings.LastIndex(host, ":"); colon > 0 {
-		return host[:colon]
+	return remote
+}
+
+// hostOnly membuang port dari RemoteAddr.
+func hostOnly(address string) string {
+	if colon := strings.LastIndex(address, ":"); colon > 0 {
+		return address[:colon]
 	}
-	return host
+	return address
 }
 
 // SetNotifier memasang pengirim notifikasi setelah server dibuat.

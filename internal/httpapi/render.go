@@ -203,9 +203,9 @@ const configHTML = `
 <label for="paypan_base_url">Base URL PayPan</label>
 <input id="paypan_base_url" name="paypan_base_url" placeholder="https://paypan.jhopan.my.id" value="{{.PaypanBase}}">
 <label for="paypan_token">Token API (scope order)</label>
-<input id="paypan_token" name="paypan_token" placeholder="pp_xxxxxxxxxxxxxxxx" value="{{.PaypanToken}}">
+<input id="paypan_token" name="paypan_token" type="password" autocomplete="off" placeholder="pp_xxxxxxxxxxxxxxxx" value="{{.PaypanToken}}">
 <label for="paypan_webhook_secret">Webhook secret</label>
-<input id="paypan_webhook_secret" name="paypan_webhook_secret" placeholder="pp_xxxxxxxxxxxxxxxx" value="{{.WebhookSecret}}">
+<input id="paypan_webhook_secret" name="paypan_webhook_secret" type="password" autocomplete="off" placeholder="pp_xxxxxxxxxxxxxxxx" value="{{.WebhookSecret}}">
 <div style="margin-top:16px"><button type="submit">Simpan</button></div>
 </form>
 <table style="margin-top:18px">
@@ -219,7 +219,7 @@ const configHTML = `
 <p style="font-size:13px;color:#667085;margin:0 0 14px">Dapatkan kabar saat ada top-up masuk. Bisa lewat Telegram, webhook, atau keduanya.</p>
 <form method="post" action="/admin/notify">
 <label for="notify_tg_token">Telegram bot token</label>
-<input id="notify_tg_token" name="notify_tg_token" placeholder="123456789:AA..." value="{{.NotifyToken}}">
+<input id="notify_tg_token" name="notify_tg_token" type="password" autocomplete="off" placeholder="123456789:AA..." value="{{.NotifyToken}}">
 <label for="notify_tg_chat">Chat ID admin (boleh beberapa, pisah koma)</label>
 <input id="notify_tg_chat" name="notify_tg_chat" placeholder="123456789,987654321" value="{{.NotifyChat}}">
 <label for="notify_tg_topic">Topic ID supergrup (opsional)</label>

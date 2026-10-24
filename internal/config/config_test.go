@@ -18,12 +18,15 @@ func TestLoadUsesEnvironmentValues(t *testing.T) {
 
 func TestLoadUsesDefaultAddress(t *testing.T) {
 	t.Setenv("PAN_WALLET_ADDR", "")
+	t.Setenv("PAN_WALLET_HOST", "")
+	t.Setenv("PAN_WALLET_PORT", "")
 	t.Setenv("PAN_WALLET_DATABASE_URL", "")
 
 	settings := Load()
 
-	if settings.Address != ":8080" {
-		t.Fatalf("Address = %q, want :8080", settings.Address)
+	// Default 127.0.0.1 (bukan :8080) supaya tidak terbuka ke jaringan.
+	if settings.Address != "127.0.0.1:8080" {
+		t.Fatalf("Address = %q, want 127.0.0.1:8080", settings.Address)
 	}
 	if settings.DatabaseURL != "" {
 		t.Fatalf("DatabaseURL = %q, want empty", settings.DatabaseURL)

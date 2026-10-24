@@ -25,7 +25,11 @@ func main() {
 	}
 
 	adminAuth := httpapi.NewAdminAuth(settings.AdminUsername, settings.AdminPassword)
-	deps := httpapi.Deps{Admin: adminAuth}
+	deps := httpapi.Deps{
+		Admin:          adminAuth,
+		TrustedProxies: settings.TrustedProxies,
+		PublicBaseURL:  settings.PublicBaseURL,
+	}
 	var closeStore func()
 
 	switch settings.Driver {

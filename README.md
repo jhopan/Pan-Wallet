@@ -92,3 +92,45 @@ Dua jalur, keduanya HTTP biasa jadi gampang dicampur dengan sistem lain:
 ```
 
 Tombol **Kirim pesan uji** tersedia untuk memastikan konfigurasi benar.
+
+## Jalan di produksi dengan cloudflared
+
+Tidak perlu membuka port ke internet. Cukup tunnel:
+
+```bash
+# 1. isi .env
+PAN_WALLET_HOST=127.0.0.1
+PAN_WALLET_PORT=8080
+PAN_WALLET_PUBLIC_URL=https://wallet.domain-kamu.com
+PAN_WALLET_TRUSTED_PROXIES=127.0.0.1,::1
+
+# 2. jalankan Pan-Wallet
+./pan-wallet
+
+# 3. jalankan tunnel
+cloudflared tunnel --url http://127.0.0.1:8080
+```
+
+Dengan konfigurasi tetap (`~/.cloudflared/config.yml`):
+
+```yaml
+tunnel: <TUNNEL-ID>
+credentials-file: /path/<TUNNEL-ID>.json
+ingress:
+  - hostname: wallet.domain-kamu.com
+    service: http://127.0.0.1:8080
+  - service: http_status:404
+```
+
+```bash
+cloudflared tunnel run <NAMA-TUNNEL>
+```
+
+### Kenapa PAN_WALLET_TRUSTED_PROXIES penting
+
+Tanpa daftar ini, Pan-Wallet tidak mempercayai header `X-Forwarded-For`
+dari siapa pun. Itu **aman**, tapi semua pengunjung terlihat berasal dari
+IP tunnel yang sama — rate limit jadi cepat habis untuk semua orang.
+
+Diisi `127.0.0.1,::1` (alamat cloudflared), maka IP asli pengunjung dipakai
+untuk rate limit. Header palsu dari internet tetap diabaikan.

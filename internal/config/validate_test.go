@@ -75,6 +75,8 @@ func TestLoadDefaultsToSQLite(t *testing.T) {
 	t.Setenv("PAN_WALLET_DB_DRIVER", "")
 	t.Setenv("PAN_WALLET_DB_PATH", "")
 	t.Setenv("PAN_WALLET_ADDR", "")
+	t.Setenv("PAN_WALLET_HOST", "")
+	t.Setenv("PAN_WALLET_PORT", "")
 
 	settings := Load()
 
@@ -84,7 +86,7 @@ func TestLoadDefaultsToSQLite(t *testing.T) {
 	if settings.DatabasePath != "data/pan-wallet.db" {
 		t.Fatalf("DatabasePath = %q, want data/pan-wallet.db", settings.DatabasePath)
 	}
-	if settings.Address != ":8080" {
-		t.Fatalf("Address = %q, want :8080", settings.Address)
+	if settings.Address != "127.0.0.1:8080" {
+		t.Fatalf("Address = %q, want 127.0.0.1:8080", settings.Address)
 	}
 }

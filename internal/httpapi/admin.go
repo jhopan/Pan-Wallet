@@ -142,11 +142,23 @@ func (server *Server) adminConfig(response http.ResponseWriter, request *http.Re
 	notifyToken, notifyChat, notifyWebhook := server.notifySettings(request.Context())
 	notifyTopic, _ := server.deps.Settings.Setting(request.Context(), "notify_tg_topic")
 
-	scheme := "http"
-	if request.TLS != nil {
-		scheme = "https"
+	// URL webhook yang harus didaftarkan ke PayPan.
+	// Prioritas: PAN_WALLET_PUBLIC_URL dari env (domain tunnel yang benar-benar
+	// dilihat PayPan). Kalau kosong, tebak dari request — tapi di belakang
+	// cloudflared tebakan ini bisa salah (host internal / http), jadi env
+	// jauh lebih dapat diandalkan.
+	if server.deps.PublicBaseURL != "" {
+		webhookURL = server.deps.PublicBaseURL + "/webhook/paypan"
+	} else {
+		scheme := "http"
+		if request.TLS != nil {
+			scheme = "https"
+		}
+		if proto := request.Header.Get("X-Forwarded-Proto"); proto != "" {
+			scheme = proto
+		}
+		webhookURL = scheme + "://" + request.Host + "/webhook/paypan"
 	}
-	webhookURL = scheme + "://" + request.Host + "/webhook/paypan"
 
 	paypanStatus := "belum diset"
 	if paypanBase != "" && paypanToken != "" {
