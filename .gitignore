@@ -6,7 +6,8 @@ __pycache__/
 .venv/
 venv/
 data/
-export/
+# hanya folder ekspor di root, bukan internal/export
+/export/
 *.db
 *.db-shm
 *.db-wal
