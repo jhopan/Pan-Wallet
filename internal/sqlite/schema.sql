@@ -1,4 +1,4 @@
--- Skema Pan-Wallet untuk SQLite (mode lokal / single-server).
+-- Skema PanWallet untuk SQLite (mode lokal / single-server).
 -- Padanan PostgreSQL, tanpa uuid/jsonb/timestamptz: id TEXT (hex acak),
 -- waktu INTEGER unix, metadata JSON disimpan sebagai TEXT.
 

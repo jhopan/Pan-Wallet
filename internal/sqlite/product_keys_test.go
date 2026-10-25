@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/jhopan/Pan-Wallet/internal/auth"
+	"github.com/jhopan/PanWallet/internal/auth"
 )
 
 func TestProductKeyAuthenticatesToProduct(t *testing.T) {

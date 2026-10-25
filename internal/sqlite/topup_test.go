@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jhopan/Pan-Wallet/internal/paypan"
+	"github.com/jhopan/PanWallet/internal/paypan"
 )
 
 // fakePaypan meniru POST /api/invoice dan GET /api/invoice/{id}.

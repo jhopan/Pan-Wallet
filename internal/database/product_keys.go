@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 	"strings"
 
 	"github.com/jackc/pgx/v5"

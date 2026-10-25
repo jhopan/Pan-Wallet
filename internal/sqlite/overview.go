@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jhopan/Pan-Wallet/internal/report"
+	"github.com/jhopan/PanWallet/internal/report"
 )
 
 // Overview menghitung ringkasan dashboard dari data SQLite.

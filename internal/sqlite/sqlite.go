@@ -1,4 +1,4 @@
-// Package sqlite menyediakan penyimpanan Pan-Wallet berbasis SQLite: satu file,
+// Package sqlite menyediakan penyimpanan PanWallet berbasis SQLite: satu file,
 // tanpa server database. Semua penulisan saldo berjalan serial (satu koneksi)
 // sehingga invarian saldo tetap terjaga tanpa row lock seperti PostgreSQL.
 package sqlite

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // WalletRowView adalah baris wallet untuk tampilan panel.

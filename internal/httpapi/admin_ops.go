@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jhopan/Pan-Wallet/internal/backup"
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/backup"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // AuditStore mencatat dan membaca jejak tindakan admin.

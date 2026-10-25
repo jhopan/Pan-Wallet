@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // portalLogin menampilkan form masuk pelanggan (email).

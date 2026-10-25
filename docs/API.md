@@ -1,4 +1,4 @@
-# Pan-Wallet API
+# PanWallet API
 
 Pusat saldo pelanggan untuk semua produk Jhopan: AgenPulsa, Tembak Paket, AutoBuy, Xray Premium, dan bot Telegram/WhatsApp.
 
@@ -367,7 +367,7 @@ curl -s -X POST https://wallet.domain/v1/identity/link/start \
 ```json
 {
   "code": "674089",
-  "instruction": "Buka bot Telegram Pan-Wallet, lalu kirim:\n\n/ikat 674089\n\nKode berlaku 10 menit.",
+  "instruction": "Buka bot Telegram PanWallet, lalu kirim:\n\n/ikat 674089\n\nKode berlaku 10 menit.",
   "expires_in": 600
 }
 ```
@@ -417,7 +417,7 @@ Setelah ini, `resolve` dengan email tersebut mengembalikan wallet yang sama.
 ```
 1. Pelanggan buka website, masukkan email budi@gmail.com
 2. Website -> POST /v1/identity/link/start {provider:"email", external_id:"budi@gmail.com"}
-3. Website tampilkan: "Kirim /ikat 674089 ke bot Telegram Pan-Wallet"
+3. Website tampilkan: "Kirim /ikat 674089 ke bot Telegram PanWallet"
 4. Pelanggan buka Telegram, kirim /ikat 674089
 5. Bot -> POST /v1/identity/link/confirm {code:"674089", telegram_id:"123456789"}
 6. Bot: "Berhasil! Akun terhubung."
@@ -477,7 +477,7 @@ sadar Cloudflare dan reverse proxy.
 Webhook bisa gagal (jaringan, firewall, restart). Karena itu ada pemeriksaan
 berkala sebagai cadangan:
 
-- Setiap **2 menit**, Pan-Wallet menanyakan status invoice pending yang berumur
+- Setiap **2 menit**, PanWallet menanyakan status invoice pending yang berumur
   lebih dari **3 menit** ke PayPan.
 - `paid` -> saldo dikredit (idempoten, tidak dobel).
 - `expired` / `refunded` -> invoice ditandai kedaluwarsa.
@@ -489,16 +489,16 @@ Artinya: pelanggan tetap dapat saldo walau webhook tidak sampai.
 
 ## 12. Top-up QRIS lewat PayPan
 
-Pan-Wallet tidak membuat QR sendiri. Dia meminta invoice ke PayPan, lalu menerima webhook saat lunas.
+PanWallet tidak membuat QR sendiri. Dia meminta invoice ke PayPan, lalu menerima webhook saat lunas.
 
 ```
 Pelanggan minta top-up Rp50.000
-   -> Pan-Wallet POST PayPan /api/invoice
+   -> PanWallet POST PayPan /api/invoice
    -> PayPan tentukan kode unik, balas total 50.001 + pay_url
    -> Pelanggan bayar QRIS
    -> HP merchant deteksi notif, kirim ke PayPan
    -> PayPan cocokkan, POST /webhook/paypan (HMAC)
-   -> Pan-Wallet verifikasi, saldo bertambah + ledger
+   -> PanWallet verifikasi, saldo bertambah + ledger
 ```
 
 **Konfigurasi** (panel -> Konfigurasi, berlaku tanpa restart):
@@ -512,7 +512,7 @@ Pelanggan minta top-up Rp50.000
 Daftarkan URL webhook ini di admin PayPan -> Konfigurasi -> Webhook:
 
 ```text
-https://<domain-pan-wallet>/webhook/paypan
+https://<domain-panwallet>/webhook/paypan
 ```
 
 **POST /webhook/paypan** (dipanggil PayPan, bukan produk)
@@ -664,7 +664,7 @@ SQLite disimpan sebagai satu berkas, jadi backup = salin berkas.
 - Menyimpan **24 berkas terbaru**, sisanya dihapus otomatis.
 - Backup pertama dibuat **saat service start**.
 - Tombol manual: `/admin/backup` → "Buat backup sekarang".
-- Ubah folder lewat env `PAN_WALLET_BACKUP_DIR`.
+- Ubah folder lewat env `PANWALLET_BACKUP_DIR`.
 
 Untuk PostgreSQL, gunakan `pg_dump` bawaan — backup berkas tidak berlaku.
 

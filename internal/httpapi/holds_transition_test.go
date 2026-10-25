@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/report"
-	"github.com/jhopan/Pan-Wallet/internal/wallet"
+	"github.com/jhopan/PanWallet/internal/report"
+	"github.com/jhopan/PanWallet/internal/wallet"
 )
 
 type fakeTransitionStore struct {

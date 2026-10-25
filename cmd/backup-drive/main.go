@@ -1,6 +1,6 @@
 // Command backup-drive membuat snapshot database lalu mengunggahnya ke
 // Google Drive memakai rclone. Dirancang untuk dijalankan dari cron/Task
-// Scheduler, dan aman walau server Pan-Wallet sedang melayani permintaan.
+// Scheduler, dan aman walau server PanWallet sedang melayani permintaan.
 //
 // Pemakaian:
 //
@@ -17,19 +17,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/backup"
+	"github.com/jhopan/PanWallet/internal/backup"
 )
 
 func main() {
 	remote := flag.String("remote", envOr("RCLONE_REMOTE", "jhopan"), "nama remote rclone")
-	dbPath := flag.String("db", envOr("PAN_WALLET_DB_PATH", "data/pan-wallet.db"), "lokasi database")
-	backupDir := flag.String("dir", envOr("PAN_WALLET_BACKUP_DIR", "backup"), "folder backup lokal")
+	dbPath := flag.String("db", envOr("PANWALLET_DB_PATH", "data/panwallet.db"), "lokasi database")
+	backupDir := flag.String("dir", envOr("PANWALLET_BACKUP_DIR", "backup"), "folder backup lokal")
 	keepDays := flag.Int("keep-days", 30, "hapus backup di Drive yang lebih tua dari N hari")
 	dryRun := flag.Bool("dry-run", false, "hanya tampilkan rencana, tidak mengunggah")
 	flag.Parse()
 
 	stamp := time.Now().Format("20060102-150405")
-	name := fmt.Sprintf("pan-wallet-%s.db", stamp)
+	name := fmt.Sprintf("panwallet-%s.db", stamp)
 	target := filepath.Join(*backupDir, name)
 
 	// 1. Snapshot konsisten (VACUUM INTO, menyertakan data WAL).
@@ -57,7 +57,7 @@ func main() {
 	}
 
 	// 3. Unggah ke Drive.
-	destination := fmt.Sprintf("%s:Pan-Wallet-Backup/", *remote)
+	destination := fmt.Sprintf("%s:PanWallet-Backup/", *remote)
 	fmt.Printf("[3/4] unggah ke %s\n", destination)
 	if err := runRclone("copy", target, destination, "--no-traverse"); err != nil {
 		fmt.Fprintf(os.Stderr, "gagal unggah: %v\n", err)

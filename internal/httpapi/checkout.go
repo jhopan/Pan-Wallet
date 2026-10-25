@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/jhopan/Pan-Wallet/internal/database"
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/database"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 func migrationsNames() []string {
@@ -18,7 +18,7 @@ func migrationsNames() []string {
 }
 
 // checkout mengarahkan pelanggan ke halaman bayar PayPan.
-// Pan-Wallet tidak merender QR sendiri: PayPan yang memegang gateway.
+// PanWallet tidak merender QR sendiri: PayPan yang memegang gateway.
 func (server *Server) checkout(response http.ResponseWriter, request *http.Request) {
 	if server.deps.Topups == nil {
 		http.Error(response, "database belum siap", http.StatusServiceUnavailable)

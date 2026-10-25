@@ -1,5 +1,5 @@
 // Package paypan adalah client untuk PayPan, payment gateway QRIS yang sudah
-// berjalan. Pan-Wallet TIDAK membuat QR sendiri: dia meminta invoice ke PayPan,
+// berjalan. PanWallet TIDAK membuat QR sendiri: dia meminta invoice ke PayPan,
 // menampilkan pay_url, lalu menerima webhook order.paid untuk mengkredit saldo.
 //
 // Kontrak: POST /api/invoice, GET /api/invoice/{id}, POST /api/invoice/{id}/cancel

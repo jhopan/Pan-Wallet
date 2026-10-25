@@ -143,7 +143,7 @@ func (server *Server) adminConfig(response http.ResponseWriter, request *http.Re
 	notifyTopic, _ := server.deps.Settings.Setting(request.Context(), "notify_tg_topic")
 
 	// URL webhook yang harus didaftarkan ke PayPan.
-	// Prioritas: PAN_WALLET_PUBLIC_URL dari env (domain tunnel yang benar-benar
+	// Prioritas: PANWALLET_PUBLIC_URL dari env (domain tunnel yang benar-benar
 	// dilihat PayPan). Kalau kosong, tebak dari request — tapi di belakang
 	// cloudflared tebakan ini bisa salah (host internal / http), jadi env
 	// jauh lebih dapat diandalkan.

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/notify"
-	"github.com/jhopan/Pan-Wallet/internal/paypan"
+	"github.com/jhopan/PanWallet/internal/notify"
+	"github.com/jhopan/PanWallet/internal/paypan"
 )
 
 // paypanClient membangun client dari pengaturan yang tersimpan di database.

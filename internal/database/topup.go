@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jhopan/Pan-Wallet/internal/paypan"
-	"github.com/jhopan/Pan-Wallet/internal/topup"
+	"github.com/jhopan/PanWallet/internal/paypan"
+	"github.com/jhopan/PanWallet/internal/topup"
 )
 
 // ErrInvoiceNotFound dipakai saat invoice tidak ada.

@@ -1,4 +1,4 @@
-module github.com/jhopan/Pan-Wallet
+module github.com/jhopan/PanWallet
 
 go 1.26.0
 

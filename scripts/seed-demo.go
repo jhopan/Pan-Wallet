@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 func main() {
-	store, err := sqlite.Open(context.Background(), "data/pan-wallet.db")
+	store, err := sqlite.Open(context.Background(), "data/panwallet.db")
 	if err != nil {
 		log.Fatal(err)
 	}

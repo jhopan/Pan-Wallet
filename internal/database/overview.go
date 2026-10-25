@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jhopan/Pan-Wallet/internal/report"
+	"github.com/jhopan/PanWallet/internal/report"
 )
 
 func (store *Store) Overview(ctx context.Context) (report.Overview, error) {

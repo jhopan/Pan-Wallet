@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jhopan/Pan-Wallet/internal/identity"
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/identity"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // IdentityStore mengelola tautan identitas pelanggan.

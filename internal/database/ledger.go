@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // LedgerEntries mengambil mutasi saldo terbaru untuk satu wallet user.

@@ -159,7 +159,7 @@ func TestListIgnoresForeignFiles(t *testing.T) {
 
 	list, _ := runner.List()
 	if len(list) != 1 {
-		t.Fatalf("hanya berkas pan-wallet-*.db yang dihitung, dapat %d", len(list))
+		t.Fatalf("hanya berkas panwallet-*.db yang dihitung, dapat %d", len(list))
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/jhopan/Pan-Wallet/internal/identity"
+	"github.com/jhopan/PanWallet/internal/identity"
 )
 
 func TestResolveTelegramCreatesWalletOnce(t *testing.T) {

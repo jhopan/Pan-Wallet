@@ -24,6 +24,7 @@ func NewRenderer() *Renderer {
 		"report":   template.Must(template.New("report").Parse(layoutHTML + reportHTML)),
 		"backup":   template.Must(template.New("backup").Parse(layoutHTML + backupHTML)),
 		"export":   template.Must(template.New("export").Parse(layoutHTML + exportHTML)),
+		"status":   template.Must(template.New("status").Parse(layoutHTML + statusHTML)),
 		"checkout": template.Must(template.New("checkout").Parse(checkoutHTML)),
 		"portal":   template.Must(template.New("portal").Parse(portalHTML)),
 	}}
@@ -65,7 +66,7 @@ const layoutHTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{.Title}} - Pan-Wallet</title>
+<title>{{.Title}} - PanWallet</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f2f4f8;margin:0;color:#101828}
@@ -127,7 +128,7 @@ form.inline{display:inline}
 <body>
 <div class="layout">
 <div class="sidebar">
-<div class="brand"><div class="dot">P</div><div><b>Pan-Wallet</b><small>by JhopanStore</small></div></div>
+<div class="brand"><div class="dot">P</div><div><b>PanWallet</b><small>by JhopanStore</small></div></div>
 <div class="menu">
 <a href="/admin" class="{{if eq .Tab "home"}}on{{end}}"><span class="ico">▤</span> Dashboard</a>
 <a href="/admin/topup" class="{{if eq .Tab "topup"}}on{{end}}"><span class="ico">▣</span> Top-up QRIS</a>
@@ -244,7 +245,7 @@ const loginHTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login - Pan-Wallet</title>
+<title>Login - PanWallet</title>
 <style>
 body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f2f4f8;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
 .c{background:#fff;padding:36px;border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.09);width:340px}
@@ -262,7 +263,7 @@ button:hover{background:#166f30}
 </head>
 <body>
 <div class="c">
-<div class="logo"><div class="dot">P</div><div><b>Pan-Wallet</b><small>by JhopanStore</small></div></div>
+<div class="logo"><div class="dot">P</div><div><b>PanWallet</b><small>by JhopanStore</small></div></div>
 {{if .Error}}<p class="e">{{.Error}}</p>{{end}}
 <form method="post" action="/admin/login">
 <label for="username">Username</label><input id="username" type="text" name="username" placeholder="username" autofocus autocomplete="username">
@@ -390,7 +391,7 @@ Bot tidak boleh menyimpan saldo sendiri.
 <pre style="background:#f2f4f8;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:0">curl -s {{.BaseURL}}/v1/public/&lt;PUBLIC_ID&gt;</pre>
 
 <small style="color:#667085;display:block;margin-top:14px">
-Dokumentasi lengkap: <code>docs/API.md</code> di repo Pan-Wallet.
+Dokumentasi lengkap: <code>docs/API.md</code> di repo PanWallet.
 </small>
 </div>
 
@@ -459,7 +460,7 @@ const portalHTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{.Title}} - Pan-Wallet</title>
+<title>{{.Title}} - PanWallet</title>
 <style>
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f2f4f8;color:#101828;padding:24px;display:flex;justify-content:center}
 .wrap{width:100%;max-width:440px}
@@ -505,7 +506,7 @@ footer{color:#98a2b3;font-size:11px;text-align:center;margin-top:8px}
 {{if eq .Step "code"}}
 <div class="card">
   <h1>Ikat akun</h1>
-  <p class="sub">Email <b>{{.Email}}</b> belum terhubung. Kirim kode ini ke bot Telegram Pan-Wallet.</p>
+  <p class="sub">Email <b>{{.Email}}</b> belum terhubung. Kirim kode ini ke bot Telegram PanWallet.</p>
   <div class="code">{{.Code}}</div>
   <p class="sub">Buka Telegram, kirim:<br><b>/ikat {{.Code}}</b></p>
   <form method="post" action="/masuk/cek">
@@ -528,7 +529,7 @@ footer{color:#98a2b3;font-size:11px;text-align:center;margin-top:8px}
   <div style="margin-top:14px;padding:10px 12px;background:#fff8e6;border:1px solid #ffe0a3;border-radius:8px;font-size:12px;color:#7a5a00">
     Saldo hanya bisa dipakai untuk transaksi di layanan kami. Saldo tidak dapat diuangkan atau ditarik tunai.
   </div>
-  <footer>Untuk top-up, buka bot Telegram Pan-Wallet. Minimal top-up Rp 25.000.</footer>
+  <footer>Untuk top-up, buka bot Telegram PanWallet. Minimal top-up Rp 25.000.</footer>
 </div>
 
 <div class="card">
@@ -629,5 +630,36 @@ Tabel konfigurasi (token PayPan, webhook secret) <b>tidak ikut diekspor</b> supa
 
 <div class="card"><h2>Ringkasan</h2>
 <pre style="background:#f2f4f8;padding:14px;border-radius:8px;font-size:13px;margin:0;white-space:pre-wrap">{{if .Ringkasan}}{{.Ringkasan}}{{else}}(belum ada data){{end}}</pre>
+</div>
+`
+
+const statusHTML = `
+<div class="card" style="text-align:center">
+<h2 style="margin-bottom:6px">{{.Title}}</h2>
+<p style="font-size:28px;font-weight:700;margin:14px 0 6px;color:{{if .OverallOK}}#1a7f37{{else}}#b42318{{end}}">
+{{if .OverallOK}}● {{.Overall}}{{else}}▲ {{.Overall}}{{end}}
+</p>
+<p style="font-size:13px;color:#667085;margin:0">Diperiksa {{.CheckedAt}} · berjalan {{.Uptime}}</p>
+</div>
+
+<div class="card"><h2>Komponen</h2><table>
+<tr><th>Komponen</th><th>Status</th><th>Keterangan</th></tr>
+{{range .Components}}<tr>
+<td>{{.Name}}</td>
+<td style="color:{{if .OK}}#1a7f37{{else}}#b42318{{end}};font-weight:600">
+{{if .OK}}normal{{else}}{{.Message}}{{end}}</td>
+<td style="font-size:12px;color:#667085">{{.Detail}}{{if .Latency}} ({{.Latency}}){{end}}</td>
+</tr>{{end}}
+</table></div>
+
+<div class="card"><h2>Informasi server</h2><table>
+{{range .Facts}}<tr><td style="color:#667085">{{.Label}}</td><td>{{.Value}}</td></tr>{{end}}
+</table></div>
+
+<div class="card" style="background:#f8fafc">
+<p style="font-size:12px;color:#667085;margin:0">
+Halaman ini hanya menampilkan kesehatan sistem. Tidak ada data pelanggan atau saldo di sini.
+Versi mesin: <a href="/healthz" style="color:#1a7f37">/healthz</a>
+</p>
 </div>
 `

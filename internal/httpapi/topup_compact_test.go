@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jhopan/Pan-Wallet/internal/notify"
+	"github.com/jhopan/PanWallet/internal/notify"
 )
 
 // Testimoni publik tidak boleh memuat data sensitif apa pun:

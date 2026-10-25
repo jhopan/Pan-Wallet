@@ -1,14 +1,14 @@
-# Integrasi Pan-Wallet untuk Bot Lain
+# Integrasi PanWallet untuk Bot Lain
 
 Panduan untuk bot toko (AgenPulsa, Xray, WhatsApp, dsb) yang ingin memakai
-saldo Pan-Wallet. Semua contoh memakai `curl`, jadi bisa dipakai dari bahasa
+saldo PanWallet. Semua contoh memakai `curl`, jadi bisa dipakai dari bahasa
 apa pun, atau ditempel ke script.
 
 ---
 
 ## Aturan main
 
-1. **Bot toko tidak memegang saldo.** Saldo hanya ada di Pan-Wallet.
+1. **Bot toko tidak memegang saldo.** Saldo hanya ada di PanWallet.
 2. **Bot toko tidak punya fitur top-up.** Kalau saldo kurang, arahkan pelanggan
    ke bot saldo (mis. `@PanWalletBot`).
 3. **Identitas pelanggan = `public_id`** (8 karakter, mis. `65ZMPUNP`).
@@ -190,13 +190,13 @@ Isi saldo dulu di @PanWalletBot
 ```
 
 **Jangan** membuat fitur top-up di bot toko. Semua pembayaran lewat PayPan dan
-hanya diproses Pan-Wallet.
+hanya diproses PanWallet.
 
 ---
 
 ## Notifikasi ke bot toko (opsional)
 
-Pan-Wallet bisa mengirim webhook setiap ada top-up lunas. Isi di panel
+PanWallet bisa mengirim webhook setiap ada top-up lunas. Isi di panel
 **Konfigurasi → Notifikasi → Webhook URL**:
 
 ```bash
@@ -236,10 +236,10 @@ curl -s -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" \
   -d "text=Top-up berhasil Rp25.004"
 ```
 
-Pan-Wallet sudah mendukung ini: panel **Konfigurasi → Notifikasi →
+PanWallet sudah mendukung ini: panel **Konfigurasi → Notifikasi →
 Topic ID supergrup**. Isi angka topic-nya (bukan nama).
 
-Kalau topic diisi, Pan-Wallet otomatis memakai **format testimoni tanpa data
+Kalau topic diisi, PanWallet otomatis memakai **format testimoni tanpa data
 sensitif** — tanpa total saldo dan **tanpa ID pelanggan** (ID adalah kunci
 akses saldo, jadi tidak boleh dipajang di topic yang bisa dibaca banyak orang):
 
@@ -264,13 +264,13 @@ kode unik PayPan  : Rp      1
 masuk saldo       : Rp 25.001   <- utuh, tanpa kurang 1 rupiah
 ```
 
-Pan-Wallet memverifikasi `total == price + code` sebelum mengkredit. Kalau
+PanWallet memverifikasi `total == price + code` sebelum mengkredit. Kalau
 tidak cocok, kredit **dibatalkan** dan invoice ditolak — lebih baik gagal
 daripada pelanggan kehilangan 1 rupiah.
 
 **Penting:** webhook hanya dikirim **sekali per pelunasan**. Kalau PayPan
 mengirim ulang webhook yang sama (retry), notifikasi tidak akan dobel —
-dijaga oleh flag `FreshlyPaid` di sisi Pan-Wallet.
+dijaga oleh flag `FreshlyPaid` di sisi PanWallet.
 
 Kalau bot toko ingin tahu saldo pelanggan berubah, cukup panggil
 `GET /v1/public/<public_id>` saat dibutuhkan — tidak perlu menyimpan saldo.

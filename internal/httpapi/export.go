@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jhopan/Pan-Wallet/internal/export"
+	"github.com/jhopan/PanWallet/internal/export"
 )
 
 // adminExport menampilkan halaman ekspor CSV.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jhopan/Pan-Wallet/internal/notify"
+	"github.com/jhopan/PanWallet/internal/notify"
 )
 
 // Testimoni harus menyebut nominal yang diminta pelanggan (25.000),

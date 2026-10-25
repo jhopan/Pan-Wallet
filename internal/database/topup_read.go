@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jhopan/Pan-Wallet/internal/topup"
+	"github.com/jhopan/PanWallet/internal/topup"
 )
 
 // TopupInvoice mengambil satu invoice berdasarkan id lokal.

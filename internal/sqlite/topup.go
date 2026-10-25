@@ -7,16 +7,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/paypan"
-	"github.com/jhopan/Pan-Wallet/internal/topup"
-	"github.com/jhopan/Pan-Wallet/internal/wallet"
+	"github.com/jhopan/PanWallet/internal/paypan"
+	"github.com/jhopan/PanWallet/internal/topup"
+	"github.com/jhopan/PanWallet/internal/wallet"
 )
 
 // ErrInvoiceNotFound dipakai saat invoice tidak ada.
 var ErrInvoiceNotFound = errors.New("invoice tidak ditemukan")
 
 // CreateTopupInvoice meminta invoice ke PayPan lalu menyimpan catatan lokal.
-// Pan-Wallet tidak menghitung kode/total sendiri: PayPan yang menentukan.
+// PanWallet tidak menghitung kode/total sendiri: PayPan yang menentukan.
 func (store *Store) CreateTopupInvoice(ctx context.Context, client *paypan.Client, walletUserID string, price int64) (topup.Invoice, error) {
 	if price < topup.MinPrice {
 		return topup.Invoice{}, fmt.Errorf("nominal top-up minimal Rp25.000")

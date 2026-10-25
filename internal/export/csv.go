@@ -149,7 +149,7 @@ func Ringkasan(db *sql.DB) (string, error) {
 	}
 
 	var builder strings.Builder
-	builder.WriteString("Ringkasan Pan-Wallet\n")
+	builder.WriteString("Ringkasan PanWallet\n")
 	builder.WriteString("Waktu: " + time.Now().Format("02 Jan 2006 15:04") + "\n\n")
 	builder.WriteString(fmt.Sprintf("Pelanggan      : %d\n", pelanggan))
 	builder.WriteString(fmt.Sprintf("Total saldo    : Rp %s\n", formatRupiah(saldo)))

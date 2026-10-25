@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // RevenueSummary menghitung ringkasan pendapatan.

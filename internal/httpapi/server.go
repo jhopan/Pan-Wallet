@@ -5,18 +5,18 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/jhopan/Pan-Wallet/internal/notify"
+	"github.com/jhopan/PanWallet/internal/notify"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/auth"
-	"github.com/jhopan/Pan-Wallet/internal/paypan"
-	"github.com/jhopan/Pan-Wallet/internal/ratelimit"
-	"github.com/jhopan/Pan-Wallet/internal/report"
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
-	"github.com/jhopan/Pan-Wallet/internal/topup"
-	"github.com/jhopan/Pan-Wallet/internal/wallet"
+	"github.com/jhopan/PanWallet/internal/auth"
+	"github.com/jhopan/PanWallet/internal/paypan"
+	"github.com/jhopan/PanWallet/internal/ratelimit"
+	"github.com/jhopan/PanWallet/internal/report"
+	"github.com/jhopan/PanWallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/topup"
+	"github.com/jhopan/PanWallet/internal/wallet"
 )
 
 // ProductAuthenticator memetakan product API key ke nama produk.
@@ -101,6 +101,11 @@ type Deps struct {
 	Database *sql.DB
 }
 
+// PaypanPinger memeriksa koneksi ke gateway pembayaran.
+type PaypanPinger interface {
+	Ping(context.Context) paypan.PingStatus
+}
+
 // NotifyStore mengirim notifikasi keluar (Telegram / webhook).
 type NotifyStore interface {
 	SendTopupPaid(ctx context.Context, event notify.TopupEvent) error
@@ -117,6 +122,10 @@ type Server struct {
 	loginLimiter *ratelimit.Limiter
 	// trustedProxies menentukan siapa yang boleh mengirim header IP.
 	trustedProxies *trustedProxies
+	// startedAt dipakai halaman status untuk menghitung lama berjalan.
+	startedAt time.Time
+	// paypanPinger memeriksa gateway sungguhan, bukan sekadar isi konfigurasi.
+	paypanPinger PaypanPinger
 }
 
 // publicLimit: 30 permintaan per menit per IP untuk endpoint publik.
@@ -133,6 +142,7 @@ func New(deps Deps) *Server {
 		loginLimiter: ratelimit.New(8, time.Minute),
 
 		trustedProxies: newTrustedProxies(deps.TrustedProxies),
+		startedAt:      time.Now(),
 	}
 	server.routes()
 	return server
@@ -211,6 +221,7 @@ func (server *Server) routes() {
 
 	// Publik
 	mux.HandleFunc("GET /healthz", server.healthDetail)
+	mux.HandleFunc("GET /status", server.statusPage)
 	mux.HandleFunc("GET /pay/{id}", server.checkout)
 	mux.HandleFunc("GET /api/topup/{id}", server.topupStatus)
 	mux.HandleFunc("POST /v1/identity/resolve", server.limitPublic(server.identityResolve))

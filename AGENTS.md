@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Pan-Wallet is the central wallet service for Jhopan products. It owns users, linked identities, wallet balances, immutable ledger entries, PayPan QRIS invoices, holds, capture/release/refund. Product repos never modify balances directly.
+PanWallet is the central wallet service for Jhopan products. It owns users, linked identities, wallet balances, immutable ledger entries, PayPan QRIS invoices, holds, capture/release/refund. Product repos never modify balances directly.
 
 ## Scope
 

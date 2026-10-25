@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/jhopan/Pan-Wallet/internal/wallet"
+	"github.com/jhopan/PanWallet/internal/wallet"
 )
 
 // capture menyelesaikan hold: saldo dipotong dan ledger dicatat.

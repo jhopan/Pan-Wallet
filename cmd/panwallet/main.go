@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/auth"
-	"github.com/jhopan/Pan-Wallet/internal/backup"
-	"github.com/jhopan/Pan-Wallet/internal/config"
-	"github.com/jhopan/Pan-Wallet/internal/database"
-	"github.com/jhopan/Pan-Wallet/internal/httpapi"
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/auth"
+	"github.com/jhopan/PanWallet/internal/backup"
+	"github.com/jhopan/PanWallet/internal/config"
+	"github.com/jhopan/PanWallet/internal/database"
+	"github.com/jhopan/PanWallet/internal/httpapi"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 func main() {
@@ -98,6 +98,9 @@ func main() {
 	server := httpapi.New(deps)
 	// Notifier butuh server (untuk membaca setting), jadi dipasang setelah dibuat.
 	server.SetNotifier(server)
+	// Pinger gateway dipasang supaya /status melaporkan keadaan PayPan
+	// yang sebenarnya, bukan sekadar "konfigurasi terisi".
+	server.SetPaypanPinger(server)
 	server.StartReconciler(context.Background())
 
 	httpServer := &http.Server{
@@ -115,7 +118,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("Pan-Wallet listening on %s", settings.Address)
+		log.Printf("PanWallet listening on %s", settings.Address)
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}

@@ -3,9 +3,9 @@ package config
 import "testing"
 
 func TestLoadReadsHostAndPort(t *testing.T) {
-	t.Setenv("PAN_WALLET_HOST", "0.0.0.0")
-	t.Setenv("PAN_WALLET_PORT", "9090")
-	t.Setenv("PAN_WALLET_ADDR", "")
+	t.Setenv("PANWALLET_HOST", "0.0.0.0")
+	t.Setenv("PANWALLET_PORT", "9090")
+	t.Setenv("PANWALLET_ADDR", "")
 
 	settings := Load()
 
@@ -21,9 +21,9 @@ func TestLoadReadsHostAndPort(t *testing.T) {
 }
 
 func TestLoadDefaultsToLocalhost(t *testing.T) {
-	t.Setenv("PAN_WALLET_HOST", "")
-	t.Setenv("PAN_WALLET_PORT", "")
-	t.Setenv("PAN_WALLET_ADDR", "")
+	t.Setenv("PANWALLET_HOST", "")
+	t.Setenv("PANWALLET_PORT", "")
+	t.Setenv("PANWALLET_ADDR", "")
 
 	settings := Load()
 
@@ -37,9 +37,9 @@ func TestLoadDefaultsToLocalhost(t *testing.T) {
 }
 
 func TestLoadAddrOverridesHostPort(t *testing.T) {
-	t.Setenv("PAN_WALLET_HOST", "127.0.0.1")
-	t.Setenv("PAN_WALLET_PORT", "8080")
-	t.Setenv("PAN_WALLET_ADDR", ":3000")
+	t.Setenv("PANWALLET_HOST", "127.0.0.1")
+	t.Setenv("PANWALLET_PORT", "8080")
+	t.Setenv("PANWALLET_ADDR", ":3000")
 
 	settings := Load()
 
@@ -49,7 +49,7 @@ func TestLoadAddrOverridesHostPort(t *testing.T) {
 }
 
 func TestLoadParsesTrustedProxies(t *testing.T) {
-	t.Setenv("PAN_WALLET_TRUSTED_PROXIES", "127.0.0.1, ::1 ,10.0.0.0/8")
+	t.Setenv("PANWALLET_TRUSTED_PROXIES", "127.0.0.1, ::1 ,10.0.0.0/8")
 
 	settings := Load()
 
@@ -62,7 +62,7 @@ func TestLoadParsesTrustedProxies(t *testing.T) {
 }
 
 func TestLoadReadsPublicURL(t *testing.T) {
-	t.Setenv("PAN_WALLET_PUBLIC_URL", "https://wallet.contoh.com/")
+	t.Setenv("PANWALLET_PUBLIC_URL", "https://wallet.contoh.com/")
 
 	settings := Load()
 

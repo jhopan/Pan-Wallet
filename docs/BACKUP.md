@@ -1,4 +1,4 @@
-# Backup & Pemulihan Pan-Wallet
+# Backup & Pemulihan PanWallet
 
 Ada dua hal berbeda yang sering tertukar:
 
@@ -14,13 +14,13 @@ Backup untuk **mengembalikan**, ekspor untuk **melihat**.
 ## Kenapa backup file mentah tidak cukup
 
 SQLite berjalan dalam mode WAL. Data baru bisa masih berada di berkas
-`pan-wallet.db-wal` dan belum masuk ke `pan-wallet.db`.
+`panwallet.db-wal` dan belum masuk ke `panwallet.db`.
 
-Menyalin `pan-wallet.db` dengan `cp` atau `io.Copy` saat server hidup akan
+Menyalin `panwallet.db` dengan `cp` atau `io.Copy` saat server hidup akan
 menghasilkan backup **tidak lengkap**. Ini pernah terjadi: backup berisi
 1 wallet dari 17, dan Rp40.000 dari Rp1.465.017.
 
-Pan-Wallet memakai `VACUUM INTO`, yaitu SQLite membuat salinan logisnya
+PanWallet memakai `VACUUM INTO`, yaitu SQLite membuat salinan logisnya
 sendiri. Hasilnya selalu utuh dan konsisten, meski server sedang melayani.
 
 ---
@@ -30,7 +30,7 @@ sendiri. Hasilnya selalu utuh dan konsisten, meski server sedang melayani.
 Otomatis tiap jam, simpan 24 terakhir, di folder `backup/`.
 
 ```
-PAN_WALLET_BACKUP_DIR=backup
+PANWALLET_BACKUP_DIR=backup
 ```
 
 Tombol manual: panel → **Backup** → *Buat backup sekarang*.
@@ -42,7 +42,7 @@ database dan backup ikut hilang bersamaan. Ini **bukan** backup sungguhan.
 
 ## 2. Backup ke Google Drive (disarankan)
 
-Pan-Wallet sudah menyertakan program `backup-drive` yang melakukan
+PanWallet sudah menyertakan program `backup-drive` yang melakukan
 snapshot + unggah + verifikasi + bersih-bersih dalam satu perintah.
 
 ```bash
@@ -59,11 +59,11 @@ rclone config          # pilih n, beri nama "jhopan", pilih Google Drive
 Keluarannya:
 
 ```
-[1/4] snapshot data/pan-wallet.db
-      backup/pan-wallet-20261025-064820.db (184.0 KB)
+[1/4] snapshot data/panwallet.db
+      backup/panwallet-20261025-064820.db (184.0 KB)
 [2/4] verifikasi isi
       pelanggan: 1
-[3/4] unggah ke jhopan:Pan-Wallet-Backup/
+[3/4] unggah ke jhopan:PanWallet-Backup/
 [4/4] hapus backup > 30 hari
 selesai.
 ```
@@ -75,7 +75,7 @@ Jadwalkan tiap 6 jam:
 
 ```bash
 crontab -e
-0 */6 * * * cd /opt/pan-wallet && ./backup-drive -remote jhopan >> backup.log 2>&1
+0 */6 * * * cd /opt/panwallet && ./backup-drive -remote jhopan >> backup.log 2>&1
 ```
 
 Windows: Task Scheduler → *Create Basic Task* → jalankan
@@ -93,11 +93,11 @@ pelanggan dan riwayat saldo — itu data pribadi.
 
 ```bash
 # repo HARUS privat
-gh repo create pan-wallet-backup --private
+gh repo create panwallet-backup --private
 
 cd backup
 git init
-git remote add origin git@github.com:USER/pan-wallet-backup.git
+git remote add origin git@github.com:USER/panwallet-backup.git
 
 # .gitignore: jangan pernah commit .env
 echo ".env" > .gitignore
@@ -148,7 +148,7 @@ Buat di Google Sheets: **Extensions → Apps Script**
 
 ```javascript
 function tarikDataPanWallet() {
-  // Ganti dengan URL Pan-Wallet kamu
+  // Ganti dengan URL PanWallet kamu
   var URL = 'https://wallet.domain-kamu.com/v1/public/65ZMPUNP';
 
   var response = UrlFetchApp.fetch(URL);
@@ -179,20 +179,20 @@ Ini yang paling penting dan paling sering dilupakan.
 **Backup yang belum pernah diuji restore bukan backup.**
 
 ```bash
-# 1. hentikan Pan-Wallet
-sudo systemctl stop pan-wallet
+# 1. hentikan PanWallet
+sudo systemctl stop panwallet
 
 # 2. simpan database sekarang (jaga-jaga)
-mv data/pan-wallet.db data/pan-wallet.db.rusak
+mv data/panwallet.db data/panwallet.db.rusak
 
 # 3. buang WAL lama — kalau tidak, data lama bisa "kembali"
-rm -f data/pan-wallet.db-wal data/pan-wallet.db-shm
+rm -f data/panwallet.db-wal data/panwallet.db-shm
 
 # 4. salin backup
-cp backup/pan-wallet-20261025-035409.db data/pan-wallet.db
+cp backup/panwallet-20261025-035409.db data/panwallet.db
 
 # 5. nyalakan
-sudo systemctl start pan-wallet
+sudo systemctl start panwallet
 
 # 6. verifikasi
 curl -s http://127.0.0.1:8080/healthz
@@ -204,7 +204,7 @@ mencampur data lama dengan backup dan hasilnya kacau.
 ### Uji restore tanpa mengganggu produksi
 
 ```bash
-cp backup/pan-wallet-XXXX.db /tmp/uji.db
+cp backup/panwallet-XXXX.db /tmp/uji.db
 sqlite3 /tmp/uji.db "select count(*) from wallet_users; select sum(balance) from wallets;"
 ```
 

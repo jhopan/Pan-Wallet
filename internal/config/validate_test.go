@@ -12,7 +12,7 @@ func TestValidateRejectsSQLiteWithoutPath(t *testing.T) {
 func TestValidateAcceptsSQLite(t *testing.T) {
 	settings := Settings{
 		Driver:        DriverSQLite,
-		DatabasePath:  "data/pan-wallet.db",
+		DatabasePath:  "data/panwallet.db",
 		AdminUsername: "admin",
 		AdminPassword: "rahasia123",
 	}
@@ -62,7 +62,7 @@ func TestValidateRejectsUnknownDriver(t *testing.T) {
 func TestValidateRejectsShortAdminPassword(t *testing.T) {
 	settings := Settings{
 		Driver:        DriverSQLite,
-		DatabasePath:  "data/pan-wallet.db",
+		DatabasePath:  "data/panwallet.db",
 		AdminUsername: "admin",
 		AdminPassword: "pendek",
 	}
@@ -72,19 +72,19 @@ func TestValidateRejectsShortAdminPassword(t *testing.T) {
 }
 
 func TestLoadDefaultsToSQLite(t *testing.T) {
-	t.Setenv("PAN_WALLET_DB_DRIVER", "")
-	t.Setenv("PAN_WALLET_DB_PATH", "")
-	t.Setenv("PAN_WALLET_ADDR", "")
-	t.Setenv("PAN_WALLET_HOST", "")
-	t.Setenv("PAN_WALLET_PORT", "")
+	t.Setenv("PANWALLET_DB_DRIVER", "")
+	t.Setenv("PANWALLET_DB_PATH", "")
+	t.Setenv("PANWALLET_ADDR", "")
+	t.Setenv("PANWALLET_HOST", "")
+	t.Setenv("PANWALLET_PORT", "")
 
 	settings := Load()
 
 	if settings.Driver != DriverSQLite {
 		t.Fatalf("Driver = %q, want sqlite", settings.Driver)
 	}
-	if settings.DatabasePath != "data/pan-wallet.db" {
-		t.Fatalf("DatabasePath = %q, want data/pan-wallet.db", settings.DatabasePath)
+	if settings.DatabasePath != "data/panwallet.db" {
+		t.Fatalf("DatabasePath = %q, want data/panwallet.db", settings.DatabasePath)
 	}
 	if settings.Address != "127.0.0.1:8080" {
 		t.Fatalf("Address = %q, want 127.0.0.1:8080", settings.Address)

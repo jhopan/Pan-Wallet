@@ -3,8 +3,8 @@ package config
 import "testing"
 
 func TestLoadUsesEnvironmentValues(t *testing.T) {
-	t.Setenv("PAN_WALLET_ADDR", "127.0.0.1:9090")
-	t.Setenv("PAN_WALLET_DATABASE_URL", "postgres://wallet:secret@example.test:5432/wallet")
+	t.Setenv("PANWALLET_ADDR", "127.0.0.1:9090")
+	t.Setenv("PANWALLET_DATABASE_URL", "postgres://wallet:secret@example.test:5432/wallet")
 
 	settings := Load()
 
@@ -17,10 +17,10 @@ func TestLoadUsesEnvironmentValues(t *testing.T) {
 }
 
 func TestLoadUsesDefaultAddress(t *testing.T) {
-	t.Setenv("PAN_WALLET_ADDR", "")
-	t.Setenv("PAN_WALLET_HOST", "")
-	t.Setenv("PAN_WALLET_PORT", "")
-	t.Setenv("PAN_WALLET_DATABASE_URL", "")
+	t.Setenv("PANWALLET_ADDR", "")
+	t.Setenv("PANWALLET_HOST", "")
+	t.Setenv("PANWALLET_PORT", "")
+	t.Setenv("PANWALLET_DATABASE_URL", "")
 
 	settings := Load()
 

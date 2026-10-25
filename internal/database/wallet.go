@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jhopan/Pan-Wallet/internal/report"
-	"github.com/jhopan/Pan-Wallet/internal/wallet"
+	"github.com/jhopan/PanWallet/internal/report"
+	"github.com/jhopan/PanWallet/internal/wallet"
 )
 
 func (store *Store) CreateHold(ctx context.Context, request wallet.CreateHoldRequest, expiresAt time.Time) (wallet.Hold, error) {

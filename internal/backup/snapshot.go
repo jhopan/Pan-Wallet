@@ -65,7 +65,7 @@ func escapeSQL(value string) string {
 
 // timestampedName membuat nama berkas backup dengan waktu lokal.
 func timestampedName(now time.Time) string {
-	return fmt.Sprintf("pan-wallet-%s.db", now.Format("20060102-150405"))
+	return fmt.Sprintf("panwallet-%s.db", now.Format("20060102-150405"))
 }
 
 // CountRows memastikan berkas backup dapat dibuka dan menghitung baris

@@ -1,11 +1,11 @@
-# Pan-Wallet
+# PanWallet
 
 
 **Dokumentasi:** [API](docs/API.md) · [Integrasi bot lain](docs/INTEGRASI.md) · [Backup & pemulihan](docs/BACKUP.md)
 
-**Bot Telegram:** [pan-wallet-telebot](https://github.com/jhopan/pan-wallet-telebot)
+**Bot Telegram:** [panwallet-telebot](https://github.com/jhopan/panwallet-telebot)
 
-Wallet pusat untuk saldo Jhopan lintas produk: AgenPulsa, AutoBuy, Tembak Paket XL, Xray Premium, dan produk berikutnya. Produk menjadi client API; hanya Pan-Wallet yang mengelola saldo, QRIS PayPan, hold, capture, release, refund, dan ledger.
+Wallet pusat untuk saldo Jhopan lintas produk: AgenPulsa, AutoBuy, Tembak Paket XL, Xray Premium, dan produk berikutnya. Produk menjadi client API; hanya PanWallet yang mengelola saldo, QRIS PayPan, hold, capture, release, refund, dan ledger.
 
 ## Status
 
@@ -23,11 +23,11 @@ Berjalan. SQLite (default) atau PostgreSQL. Gateway QRIS, panel kendali, dan API
 
 Database dipilih sebelum service berjalan. Panel tidak menyimpan URL database atau credential.
 
-- `PAN_WALLET_DB_DRIVER`: `sqlite` (default) atau `postgres`.
-- `PAN_WALLET_DB_PATH`: path file SQLite, default `data/pan-wallet.db`.
-- `PAN_WALLET_DATABASE_URL`: URL PostgreSQL, hanya bila driver `postgres`.
-- `PAN_WALLET_ADDR`: bind HTTP, default `:8080`.
-- `PAN_WALLET_ADMIN_USER` / `PAN_WALLET_ADMIN_PASS`: login panel (password minimal 8 karakter).
+- `PANWALLET_DB_DRIVER`: `sqlite` (default) atau `postgres`.
+- `PANWALLET_DB_PATH`: path file SQLite, default `data/panwallet.db`.
+- `PANWALLET_DATABASE_URL`: URL PostgreSQL, hanya bila driver `postgres`.
+- `PANWALLET_ADDR`: bind HTTP, default `:8080`.
+- `PANWALLET_ADMIN_USER` / `PANWALLET_ADMIN_PASS`: login panel (password minimal 8 karakter).
 - Salin `.env.example` menjadi `.env`, isi nilainya.
 
 ## Jalan lokal
@@ -36,7 +36,7 @@ Prasyarat: Go 1.26. Tanpa install database apa pun (SQLite).
 
 ```bash
 cp .env.example .env
-go build -o pan-wallet.exe ./cmd/pan-wallet
+go build -o panwallet.exe ./cmd/panwallet
 go run scripts/seed-demo.go     # buat wallet demo + product key
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
@@ -44,7 +44,7 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 Buka `http://127.0.0.1:8080` lalu masuk panel di `/admin/login`.
 `GET /healthz` untuk cek service.
 
-Untuk PostgreSQL: set `PAN_WALLET_DB_DRIVER=postgres` dan `PAN_WALLET_DATABASE_URL`.
+Untuk PostgreSQL: set `PANWALLET_DB_DRIVER=postgres` dan `PANWALLET_DATABASE_URL`.
 
 ## API produk
 
@@ -62,13 +62,13 @@ Lihat `docs/API.md` untuk kontrak lengkap.
 
 ```bash
 go test ./...
-go build ./cmd/pan-wallet
+go build ./cmd/panwallet
 ```
 
 ## Layout
 
 ```text
-cmd/pan-wallet/   entrypoint service
+cmd/panwallet/   entrypoint service
 internal/sqlite/  driver SQLite + skema
 internal/database/ driver PostgreSQL + migrasi
 internal/httpapi/ API, panel kendali, checkout
@@ -85,7 +85,7 @@ Panel → **Konfigurasi → Notifikasi** bisa mengirim kabar saat ada top-up mas
 Dua jalur, keduanya HTTP biasa jadi gampang dicampur dengan sistem lain:
 
 1. **Telegram** — isi bot token + chat ID admin (boleh beberapa, pisah koma).
-2. **Webhook** — isi URL, Pan-Wallet akan POST JSON:
+2. **Webhook** — isi URL, PanWallet akan POST JSON:
 
 ```json
 {"event":"topup.paid","public_id":"65ZMPUNP","amount":50001,"balance":50001}
@@ -99,13 +99,13 @@ Tidak perlu membuka port ke internet. Cukup tunnel:
 
 ```bash
 # 1. isi .env
-PAN_WALLET_HOST=127.0.0.1
-PAN_WALLET_PORT=8080
-PAN_WALLET_PUBLIC_URL=https://wallet.domain-kamu.com
-PAN_WALLET_TRUSTED_PROXIES=127.0.0.1,::1
+PANWALLET_HOST=127.0.0.1
+PANWALLET_PORT=8080
+PANWALLET_PUBLIC_URL=https://wallet.domain-kamu.com
+PANWALLET_TRUSTED_PROXIES=127.0.0.1,::1
 
-# 2. jalankan Pan-Wallet
-./pan-wallet
+# 2. jalankan PanWallet
+./panwallet
 
 # 3. jalankan tunnel
 cloudflared tunnel --url http://127.0.0.1:8080
@@ -126,9 +126,9 @@ ingress:
 cloudflared tunnel run <NAMA-TUNNEL>
 ```
 
-### Kenapa PAN_WALLET_TRUSTED_PROXIES penting
+### Kenapa PANWALLET_TRUSTED_PROXIES penting
 
-Tanpa daftar ini, Pan-Wallet tidak mempercayai header `X-Forwarded-For`
+Tanpa daftar ini, PanWallet tidak mempercayai header `X-Forwarded-For`
 dari siapa pun. Itu **aman**, tapi semua pengunjung terlihat berasal dari
 IP tunnel yang sama — rate limit jadi cepat habis untuk semua orang.
 

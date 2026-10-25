@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/wallet"
+	"github.com/jhopan/PanWallet/internal/wallet"
 )
 
 func newTestStore(t *testing.T) *Store {

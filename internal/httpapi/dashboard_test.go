@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jhopan/Pan-Wallet/internal/report"
+	"github.com/jhopan/PanWallet/internal/report"
 )
 
 type fakeOverviewStore struct{}
@@ -28,7 +28,7 @@ func (fakeOverviewStore) Overview(context.Context) (report.Overview, error) {
 	}, nil
 }
 
-// Akar situs harus 404: orang iseng tidak boleh tahu Pan-Wallet ada di sini.
+// Akar situs harus 404: orang iseng tidak boleh tahu PanWallet ada di sini.
 func TestPublicRootReturns404(t *testing.T) {
 	response := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -39,7 +39,7 @@ func TestPublicRootReturns404(t *testing.T) {
 		t.Fatalf("status = %d, want 404", response.Code)
 	}
 	body := response.Body.String()
-	for _, leak := range []string{"Pan-Wallet", "100.000", "e469f462", "/admin"} {
+	for _, leak := range []string{"PanWallet", "100.000", "e469f462", "/admin"} {
 		if strings.Contains(body, leak) {
 			t.Fatalf("halaman 404 membocorkan %q", leak)
 		}

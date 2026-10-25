@@ -66,7 +66,7 @@ func NormalizeSource(source string) string {
 	return strings.TrimSpace(source)
 }
 
-// PaypanToLocalStatus memetakan status PayPan ke status lokal Pan-Wallet.
+// PaypanToLocalStatus memetakan status PayPan ke status lokal PanWallet.
 func PaypanToLocalStatus(status string) string {
 	switch status {
 	case "paid":

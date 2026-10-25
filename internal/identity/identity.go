@@ -83,7 +83,7 @@ func GenerateCode() (string, error) {
 // LinkInstruction adalah teks yang dikirim bot ke pelanggan.
 func LinkInstruction(code string) string {
 	return fmt.Sprintf(
-		"Buka bot Telegram Pan-Wallet, lalu kirim:\n\n/ikat %s\n\nKode berlaku 10 menit.",
+		"Buka bot Telegram PanWallet, lalu kirim:\n\n/ikat %s\n\nKode berlaku 10 menit.",
 		code,
 	)
 }

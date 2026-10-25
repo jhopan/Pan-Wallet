@@ -7,7 +7,7 @@ import (
 )
 
 // root meniru situs yang tidak ada: 404 besar di tengah halaman, tanpa satu pun
-// petunjuk bahwa Pan-Wallet ada di sini. Panel hanya lewat /admin.
+// petunjuk bahwa PanWallet ada di sini. Panel hanya lewat /admin.
 func (server *Server) root(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "text/html; charset=utf-8")
 	response.WriteHeader(http.StatusNotFound)

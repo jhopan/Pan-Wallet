@@ -86,7 +86,7 @@ func (runner *Runner) List() ([]Backup, error) {
 
 	var backups []Backup
 	for _, item := range items {
-		if item.IsDir() || !strings.HasPrefix(item.Name(), "pan-wallet-") || !strings.HasSuffix(item.Name(), ".db") {
+		if item.IsDir() || !strings.HasPrefix(item.Name(), "panwallet-") || !strings.HasSuffix(item.Name(), ".db") {
 			continue
 		}
 		info, err := item.Info()

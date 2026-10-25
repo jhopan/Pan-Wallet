@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
-	"github.com/jhopan/Pan-Wallet/internal/wallet"
+	"github.com/jhopan/PanWallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/wallet"
 )
 
 // PublicIDStore mencari wallet lewat ID pendek yang dipakai pelanggan.

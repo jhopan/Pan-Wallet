@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/paypan"
-	"github.com/jhopan/Pan-Wallet/internal/topup"
+	"github.com/jhopan/PanWallet/internal/paypan"
+	"github.com/jhopan/PanWallet/internal/topup"
 )
 
 type fakeReconcileStore struct {

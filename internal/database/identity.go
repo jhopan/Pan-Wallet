@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jhopan/Pan-Wallet/internal/identity"
-	"github.com/jhopan/Pan-Wallet/internal/sqlite"
+	"github.com/jhopan/PanWallet/internal/identity"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // ErrIdentityTaken dipakai saat channel sudah tertaut ke wallet lain.

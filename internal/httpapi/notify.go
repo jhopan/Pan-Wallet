@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jhopan/PanWallet/internal/paypan"
 	"net/http"
 	"strings"
 
-	"github.com/jhopan/Pan-Wallet/internal/notify"
+	"github.com/jhopan/PanWallet/internal/notify"
 )
 
 // notifySettings membaca konfigurasi notifikasi dari database (live, tanpa restart).
@@ -94,12 +95,12 @@ func (server *Server) SendTest(ctx context.Context) error {
 
 	var firstErr error
 	if token != "" && chats != "" {
-		if err := notify.NewTelegram(token, chats, "").Send(ctx, "Tes notifikasi Pan-Wallet berhasil."); err != nil {
+		if err := notify.NewTelegram(token, chats, "").Send(ctx, "Tes notifikasi PanWallet berhasil."); err != nil {
 			firstErr = err
 		}
 	}
 	if webhook != "" {
-		body := notify.WebhookBody("test", map[string]any{"message": "Tes notifikasi Pan-Wallet"})
+		body := notify.WebhookBody("test", map[string]any{"message": "Tes notifikasi PanWallet"})
 		if err := notify.PostWebhook(ctx, webhook, body); err != nil && firstErr == nil {
 			firstErr = err
 		}
@@ -167,4 +168,22 @@ func (server *Server) adminNotifyTest(response http.ResponseWriter, request *htt
 		return
 	}
 	redirectWith(response, request, "/admin/config", "ok", "Pesan uji terkirim.")
+}
+
+// SetPaypanPinger memasang pemeriksa gateway setelah server dibuat.
+func (server *Server) SetPaypanPinger(pinger PaypanPinger) {
+	server.paypanPinger = pinger
+}
+
+// Ping memenuhi antarmuka PaypanPinger dengan membaca konfigurasi terkini.
+func (server *Server) Ping(ctx context.Context) paypan.PingStatus {
+	if server.deps.Settings == nil {
+		return paypan.PingStatus{Message: "pengaturan belum siap"}
+	}
+	base, _ := server.deps.Settings.Setting(ctx, "paypan_base_url")
+	token, _ := server.deps.Settings.Setting(ctx, "paypan_token")
+	if base == "" {
+		return paypan.PingStatus{Message: "belum diatur"}
+	}
+	return paypan.NewClient(base, token).Ping(ctx)
 }

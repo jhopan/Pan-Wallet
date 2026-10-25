@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jhopan/Pan-Wallet/internal/identity"
+	"github.com/jhopan/PanWallet/internal/identity"
 )
 
 // ErrIdentityTaken dipakai saat channel sudah tertaut ke wallet lain.
