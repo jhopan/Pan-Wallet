@@ -24,7 +24,6 @@ func NewRenderer() *Renderer {
 		"report":   template.Must(template.New("report").Parse(layoutHTML + reportHTML)),
 		"backup":   template.Must(template.New("backup").Parse(layoutHTML + backupHTML)),
 		"export":   template.Must(template.New("export").Parse(layoutHTML + exportHTML)),
-		"status":   template.Must(template.New("status").Parse(layoutHTML + statusHTML)),
 		"checkout": template.Must(template.New("checkout").Parse(checkoutHTML)),
 		"portal":   template.Must(template.New("portal").Parse(portalHTML)),
 	}}
@@ -630,36 +629,5 @@ Tabel konfigurasi (token PayPan, webhook secret) <b>tidak ikut diekspor</b> supa
 
 <div class="card"><h2>Ringkasan</h2>
 <pre style="background:#f2f4f8;padding:14px;border-radius:8px;font-size:13px;margin:0;white-space:pre-wrap">{{if .Ringkasan}}{{.Ringkasan}}{{else}}(belum ada data){{end}}</pre>
-</div>
-`
-
-const statusHTML = `
-<div class="card" style="text-align:center">
-<h2 style="margin-bottom:6px">{{.Title}}</h2>
-<p style="font-size:28px;font-weight:700;margin:14px 0 6px;color:{{if .OverallOK}}#1a7f37{{else}}#b42318{{end}}">
-{{if .OverallOK}}● {{.Overall}}{{else}}▲ {{.Overall}}{{end}}
-</p>
-<p style="font-size:13px;color:#667085;margin:0">Diperiksa {{.CheckedAt}} · berjalan {{.Uptime}}</p>
-</div>
-
-<div class="card"><h2>Komponen</h2><table>
-<tr><th>Komponen</th><th>Status</th><th>Keterangan</th></tr>
-{{range .Components}}<tr>
-<td>{{.Name}}</td>
-<td style="color:{{if .OK}}#1a7f37{{else}}#b42318{{end}};font-weight:600">
-{{if .OK}}normal{{else}}{{.Message}}{{end}}</td>
-<td style="font-size:12px;color:#667085">{{.Detail}}{{if .Latency}} ({{.Latency}}){{end}}</td>
-</tr>{{end}}
-</table></div>
-
-<div class="card"><h2>Informasi server</h2><table>
-{{range .Facts}}<tr><td style="color:#667085">{{.Label}}</td><td>{{.Value}}</td></tr>{{end}}
-</table></div>
-
-<div class="card" style="background:#f8fafc">
-<p style="font-size:12px;color:#667085;margin:0">
-Halaman ini hanya menampilkan kesehatan sistem. Tidak ada data pelanggan atau saldo di sini.
-Versi mesin: <a href="/healthz" style="color:#1a7f37">/healthz</a>
-</p>
 </div>
 `

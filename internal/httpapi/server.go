@@ -221,7 +221,6 @@ func (server *Server) routes() {
 
 	// Publik
 	mux.HandleFunc("GET /healthz", server.healthDetail)
-	mux.HandleFunc("GET /status", server.statusPage)
 	mux.HandleFunc("GET /pay/{id}", server.checkout)
 	mux.HandleFunc("GET /api/topup/{id}", server.topupStatus)
 	mux.HandleFunc("POST /v1/identity/resolve", server.limitPublic(server.identityResolve))
