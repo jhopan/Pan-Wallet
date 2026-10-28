@@ -10,6 +10,7 @@ import (
 
 	"github.com/jhopan/PanWallet/internal/notify"
 	"github.com/jhopan/PanWallet/internal/paypan"
+	"github.com/jhopan/PanWallet/internal/sqlite"
 )
 
 // paypanClient membangun client dari pengaturan yang tersimpan di database.
@@ -86,6 +87,19 @@ func (server *Server) paypanWebhook(response http.ResponseWriter, request *http.
 
 	invoice, err := server.deps.Topups.MarkTopupPaidByPaypan(request.Context(), event.Order.ID, "paypan-webhook")
 	if err != nil {
+		// Order milik aplikasi lain (mis. AgenPulsa). PayPan mengirim ke
+		// SEMUA webhook aktif tanpa memfilter per aplikasi, jadi order
+		// tersebut pasti sampai ke sini.
+		//
+		// Jawab 200 "ignored" supaya PayPan tidak menganggap gagal dan
+		// mencoba ulang 5x dengan backoff 30s/2m/5m/15m. Error lain
+		// (mis. database) tetap dibalas error supaya terlihat.
+		if errors.Is(err, sqlite.ErrInvoiceNotFound) {
+			writeJSON(response, http.StatusOK, map[string]any{
+				"ok": true, "ignored": event.Order.ID,
+			})
+			return
+		}
 		writeError(response, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
