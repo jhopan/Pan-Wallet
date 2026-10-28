@@ -277,6 +277,45 @@ Kalau bot toko ingin tahu saldo pelanggan berubah, cukup panggil
 
 ---
 
+
+---
+
+## Webhook dari PayPan (top-up masuk)
+
+Di laptop-debian, PayPan dan PanWallet berjalan di satu mesin. Webhook
+top-up dikirim **lewat LAN**, bukan lewat domain publik — lebih cepat dan
+tidak bergantung koneksi internet:
+
+```
+http://192.168.10.21:8090/webhook/paypan
+```
+
+Cara mendaftarkannya:
+
+1. Di PayPan, buat aplikasi baru bernama `PanWallet` (scope `order`).
+2. Tambahkan webhook dengan URL di atas.
+3. Secret webhook **harus sama** dengan `paypan_webhook_secret` di
+   PanWallet (panel → Konfigurasi).
+
+### Order milik aplikasi lain diabaikan
+
+PayPan mengirim webhook ke **semua** webhook aktif tanpa memfilter per
+aplikasi. Jadi order milik AgenPulsa ikut sampai ke PanWallet.
+
+PanWallet mengenali order yang bukan miliknya (tidak ada invoice dengan
+`paypan_invoice_id` tersebut) dan **mengabaikannya**:
+
+```json
+{"ok": true, "ignored": "<order-id>"}
+```
+
+Balasannya 200, bukan error. Kalau dibalas error, PayPan menganggap gagal
+dan mencoba ulang 5x dengan backoff 30s/2m/5m/15m — sia-sia dan memenuhi
+antrean retry.
+
+Order milik PanWallet sendiri diproses seperti biasa dan saldonya bertambah
+persis sebesar total unik (nominal + kode unik PayPan).
+
 ## Ringkasan endpoint
 
 | Endpoint | Auth | Fungsi |
