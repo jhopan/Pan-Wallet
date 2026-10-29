@@ -83,10 +83,10 @@ func main() {
 
 	// Backup otomatis: hanya untuk SQLite (satu berkas).
 	if settings.Driver == config.DriverSQLite {
-		runner := backup.New(settings.DatabasePath, settings.BackupDir, 24, time.Hour)
+		runner := backup.New(settings.DatabasePath, settings.BackupDir, settings.BackupKeep, time.Hour)
 		runner.Start(context.Background())
 		deps.Backup = runner
-		log.Printf("backup: %s (setiap jam, simpan 24 terakhir)", settings.BackupDir)
+		log.Printf("backup: %s (setiap jam, simpan %d terakhir)", settings.BackupDir, settings.BackupKeep)
 	}
 
 	go func() {

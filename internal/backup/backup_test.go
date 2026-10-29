@@ -182,3 +182,68 @@ func TestStartRunsImmediately(t *testing.T) {
 	}
 	t.Fatal("backup saat start tidak terjadi")
 }
+
+// Backup lokal harus dibatasi jumlahnya supaya disk tidak menumpuk.
+// Setelah keep dikecilkan (mis. 24 -> 3), file lama harus langsung dihapus
+// saat backup berikutnya dibuat.
+func TestPruneHanyaSisakanTiga(t *testing.T) {
+	source := makeSource(t)
+	dir := filepath.Join(t.TempDir(), "backup")
+
+	runner := New(source, dir, 3, time.Hour)
+	for i := 0; i < 6; i++ {
+		if _, err := runner.Once(); err != nil {
+			t.Fatalf("Once ke-%d: %v", i, err)
+		}
+		time.Sleep(1100 * time.Millisecond)
+	}
+
+	list, err := runner.List()
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(list) != 3 {
+		t.Fatalf("jumlah backup = %d, want 3", len(list))
+	}
+
+	// Hanya 3 berkas yang benar-benar ada di folder.
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("berkas di folder = %d, want 3", len(entries))
+	}
+}
+
+// Kalau jumlah file sudah melebihi keep (mis. setelah turun dari 24 ke 3),
+// prune harus menghapus yang lama saat backup berikutnya dibuat.
+func TestPruneMembuangKelebihanSaatKeepDikecilkan(t *testing.T) {
+	source := makeSource(t)
+	dir := filepath.Join(t.TempDir(), "backup")
+
+	// Bikin 8 berkas dengan keep besar dulu.
+	wide := New(source, dir, 20, time.Hour)
+	for i := 0; i < 8; i++ {
+		if _, err := wide.Once(); err != nil {
+			t.Fatalf("Once: %v", err)
+		}
+		time.Sleep(1100 * time.Millisecond)
+	}
+
+	entries, _ := os.ReadDir(dir)
+	if len(entries) != 8 {
+		t.Fatalf("setup: berkas = %d, want 8", len(entries))
+	}
+
+	// Sekarang keep = 3, backup sekali lagi harus memangkas.
+	narrow := New(source, dir, 3, time.Hour)
+	if _, err := narrow.Once(); err != nil {
+		t.Fatalf("Once: %v", err)
+	}
+
+	entries, _ = os.ReadDir(dir)
+	if len(entries) != 3 {
+		t.Fatalf("berkas setelah prune = %d, want 3", len(entries))
+	}
+}

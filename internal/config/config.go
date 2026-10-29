@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -35,6 +36,9 @@ type Settings struct {
 	// PublicBaseURL dipakai untuk menyusun link (mis. URL webhook PayPan
 	// dan pay_url) saat berjalan di balik tunnel/domain.
 	PublicBaseURL string
+	// BackupKeep adalah jumlah berkas backup lokal yang disimpan.
+	// Default 3: cukup untuk pemulihan, tidak memakan disk.
+	BackupKeep int
 }
 
 func (settings Settings) Validate() error {
@@ -114,7 +118,21 @@ func Load() Settings {
 		AdminPassword:  os.Getenv("PANWALLET_ADMIN_PASS"),
 		TrustedProxies: splitList(os.Getenv("PANWALLET_TRUSTED_PROXIES")),
 		PublicBaseURL:  strings.TrimRight(strings.TrimSpace(os.Getenv("PANWALLET_PUBLIC_URL")), "/"),
+		BackupKeep:     intEnv("PANWALLET_BACKUP_KEEP", 3),
 	}
+}
+
+// intEnv membaca bilangan bulat dari env, dengan nilai cadangan.
+func intEnv(key string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value <= 0 {
+		return fallback
+	}
+	return value
 }
 
 // splitList memecah daftar dipisah koma, membuang entri kosong.
