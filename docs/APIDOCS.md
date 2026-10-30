@@ -469,14 +469,22 @@ fi
 |---|---|
 | `POST /api/invoice` (buat invoice) | ✅ dipakai |
 | `GET /api/invoice/{id}` (status) | ✅ dipakai — checkout, rekonsiliasi, panel |
-| `POST /api/invoice/{id}/cancel` (batalkan) | ⚠️ client ada, belum ada tombol di panel |
-| `POST /api/invoice/{id}/refund` | ⚠️ client belum ada, hanya dicatat di rekonsiliasi |
+| `POST /api/invoice/{id}/cancel` (batalkan) | ✅ dipakai — tombol "batal" di panel |
+| `POST /api/invoice/{id}/refund` | ✅ dipakai — tombol "refund" di panel |
 | `POST /api/notif` | ➖ tidak perlu — PayPan mendengarin pembayaran sendiri |
 | `POST /api/order` | ➖ tidak dipakai — mode invoice QRIS yang dipakai |
 
+Tombol di panel `/admin/topup`:
+
+| Tombol | Aksi | Efek |
+|---|---|---|
+| `batal` | batalkan invoice pending | status jadi `expired` di PayPan & PanWallet, kode unik kembali ke pool |
+| `refund` | tandai invoice lunas sebagai refunded | status jadi `refunded` di PayPan & PanWallet |
+
 Catatan: **refund di PayPan itu administratif** (status invoice jadi
 `refunded`). PayPan tidak mengembalikan dana. Pengembalian dana ke pelanggan
-adalah urusan manual admin.
+adalah urusan manual admin. Saldo pelanggan **tidak** berubah sendiri saat
+refund — itu disengaja supaya tidak ada saldo berkurang tanpa persetujuan.
 
 ---
 
