@@ -47,6 +47,13 @@ func Open(ctx context.Context, path string) (*Store, error) {
 		db.Close()
 		return nil, fmt.Errorf("terapkan skema: %w", err)
 	}
+
+	// Perbaikan skema untuk database yang sudah ada. CREATE TABLE IF NOT
+	// EXISTS tidak mengubah tabel lama, jadi status refunded perlu migrasi.
+	if err := applyMigrations(ctx, db); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return store, nil
 }
 

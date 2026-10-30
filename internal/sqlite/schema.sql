@@ -80,7 +80,7 @@ create table if not exists wallet_invoices (
   amount integer not null check (amount > 0),
   product text not null,
   paypan_invoice_id text unique,
-  status text not null default 'pending' check (status in ('pending','paid','expired','cancelled')),
+  status text not null default 'pending' check (status in ('pending','paid','expired','cancelled','refunded')),
   expires_at integer not null,
   created_at integer not null
 );
@@ -118,7 +118,7 @@ create table if not exists topup_invoices (
   price integer not null check (price >= 1000),
   code integer not null default 0,
   total integer not null check (total > 0),
-  status text not null default 'pending' check (status in ('pending','paid','expired','cancelled')),
+  status text not null default 'pending' check (status in ('pending','paid','expired','cancelled','refunded')),
   source text not null default '',
   expires_at integer not null,
   paid_at integer,
