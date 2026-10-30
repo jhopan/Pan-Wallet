@@ -45,6 +45,7 @@ type TopupStore interface {
 	MarkTopupPaidByLocalID(context.Context, string, string) (topup.Invoice, error)
 	RecentTopupInvoices(context.Context, int) ([]topup.Invoice, error)
 	ExpireTopupInvoice(context.Context, string) error
+	MarkTopupRefunded(context.Context, string) error
 }
 
 // SettingsStore menyimpan konfigurasi QRIS di database.

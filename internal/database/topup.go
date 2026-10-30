@@ -131,3 +131,17 @@ func (store *Store) ExpireTopupInvoice(ctx context.Context, localID string) erro
 		`update topup_invoices set status = 'expired' where id = $1::uuid and status = 'pending'`, localID)
 	return err
 }
+
+// MarkTopupRefunded menandai invoice lunas sebagai refunded.
+// Saldo pelanggan tidak diubah; pengembalian dana tetap manual.
+func (store *Store) MarkTopupRefunded(ctx context.Context, localID string) error {
+	result, err := store.pool.Exec(ctx,
+		`update topup_invoices set status = 'refunded' where id = $1 and status = 'paid'`, localID)
+	if err != nil {
+		return fmt.Errorf("tandai refunded: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("invoice bukan berstatus lunas")
+	}
+	return nil
+}

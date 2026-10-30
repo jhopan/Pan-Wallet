@@ -41,6 +41,15 @@ func (server *Server) adminTopupCancel(response http.ResponseWriter, request *ht
 		return
 	}
 
+	// Samakan status lokal. Kalau ini gagal, invoice tetap pending di
+	// PanWallet padahal sudah dibatalkan di PayPan — jadi_error harus
+	// terlihat, bukan diabaikan diam-diam.
+	if err := server.deps.Topups.ExpireTopupInvoice(request.Context(), invoice.ID); err != nil {
+		redirectWith(response, request, "/admin/topup", "err",
+			"dibatalkan di PayPan tapi gagal update status lokal: "+err.Error())
+		return
+	}
+
 	redirectWith(response, request, "/admin/topup", "ok", "Invoice "+invoice.ID+" dibatalkan.")
 }
 
@@ -77,6 +86,14 @@ func (server *Server) adminTopupRefund(response http.ResponseWriter, request *ht
 	}
 	if err := client.RefundInvoice(request.Context(), invoice.PaypanInvoice); err != nil {
 		redirectWith(response, request, "/admin/topup", "err", "refund di PayPan gagal: "+err.Error())
+		return
+	}
+
+	// Samakan status lokal supaya panel dan API tidak bilang "lunas"
+	// padahal sudah direfund di PayPan.
+	if err := server.deps.Topups.MarkTopupRefunded(request.Context(), invoice.ID); err != nil {
+		redirectWith(response, request, "/admin/topup", "err",
+			"direfund di PayPan tapi gagal update status lokal: "+err.Error())
 		return
 	}
 

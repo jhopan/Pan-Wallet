@@ -124,3 +124,7 @@ func (fake *fakeTopups) RecentTopupInvoices(ctx context.Context, limit int) ([]t
 func (fake *fakeTopups) ExpireTopupInvoice(ctx context.Context, invoiceID string) error {
 	return nil
 }
+
+func (fake *fakeTopups) MarkTopupRefunded(ctx context.Context, localID string) error {
+	return nil
+}

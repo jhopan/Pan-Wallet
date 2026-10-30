@@ -259,3 +259,21 @@ func balanceOf(ctx context.Context, tx *sql.Tx, walletID string) int64 {
 	_ = tx.QueryRowContext(ctx, `select balance from wallets where id = ?`, walletID).Scan(&balance)
 	return balance
 }
+
+// MarkTopupRefunded menandai invoice lunas sebagai refunded.
+//
+// Dipakai setelah refund dikonfirmasi di PayPan supaya status di PanWallet
+// tidak lagi bilang "lunas". Saldo pelanggan TIDAK diubah di sini —
+// pengembalian dana tetap manual oleh admin.
+func (store *Store) MarkTopupRefunded(ctx context.Context, localID string) error {
+	result, err := store.db.ExecContext(ctx,
+		`update topup_invoices set status = 'refunded' where id = ? and status = 'paid'`, localID)
+	if err != nil {
+		return fmt.Errorf("tandai refunded: %w", err)
+	}
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		return fmt.Errorf("invoice bukan berstatus lunas")
+	}
+	return nil
+}
