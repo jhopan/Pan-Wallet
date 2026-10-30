@@ -244,6 +244,8 @@ func (server *Server) routes() {
 	mux.HandleFunc("POST /admin/topup", server.requireAdmin(server.adminTopupCreate))
 	mux.HandleFunc("POST /admin/topup/{id}/paid", server.requireAdmin(server.adminTopupPaid))
 	mux.HandleFunc("POST /admin/topup/{id}/sync", server.requireAdmin(server.paypanReconcile))
+	mux.HandleFunc("POST /admin/topup/{id}/cancel", server.requireAdmin(server.adminTopupCancel))
+	mux.HandleFunc("POST /admin/topup/{id}/refund", server.requireAdmin(server.adminTopupRefund))
 	mux.HandleFunc("GET /admin/wallets", server.requireAdmin(server.adminWallets))
 	mux.HandleFunc("POST /admin/wallets", server.requireAdmin(server.adminWalletsCreate))
 	mux.HandleFunc("POST /admin/wallets/{id}/status", server.requireAdmin(server.adminWalletsStatus))

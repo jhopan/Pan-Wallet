@@ -191,7 +191,11 @@ const topupHTML = `
 <td><a class="act" href="/pay/{{.ID}}">checkout</a>
 {{if eq .Status "pending"}}
 <form class="inline" method="post" action="/admin/topup/{{.ID}}/sync"><button class="sec" type="submit" title="Cek status ke PayPan">sync</button></form>
+<form class="inline" method="post" action="/admin/topup/{{.ID}}/cancel"><button class="sec" type="submit" title="Batalkan invoice (kode unik kembali ke pool)">batal</button></form>
 <form class="inline" method="post" action="/admin/topup/{{.ID}}/paid"><button class="sec" type="submit" title="Tandai lunas manual">lunas</button></form>
+{{if eq .Status "paid"}}
+<form class="inline" method="post" action="/admin/topup/{{.ID}}/refund"><button class="sec" type="submit" title="Tandai refunded di PayPan (dana tidak dikembalikan otomatis)">refund</button></form>
+{{end}}
 {{end}}</td>
 </tr>
 {{else}}<tr><td colspan="7" class="empty">Belum ada invoice</td></tr>{{end}}
